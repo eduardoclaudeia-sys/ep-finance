@@ -99,6 +99,37 @@
         <div id="goalList" class="goal-grid"></div>
       </section>
 
+
+      <section class="screen" id="investmentsScreen">
+        <div class="page-title">
+          <div><span class="eyebrow">INVESTIMENTOS</span><h2>Minha carteira</h2></div>
+          <button id="openInvestmentModal" class="primary small">+ Ativo</button>
+        </div>
+
+        <div class="investment-summary">
+          <div class="summary-box">
+            <span>Total investido</span>
+            <strong id="investedTotal">R$ 0,00</strong>
+          </div>
+          <div class="summary-box">
+            <span>Valor atual</span>
+            <strong id="currentInvestmentTotal">R$ 0,00</strong>
+          </div>
+          <div class="summary-box">
+            <span>Resultado</span>
+            <strong id="investmentResult">R$ 0,00</strong>
+          </div>
+        </div>
+
+        <div class="section-block">
+          <div class="section-head">
+            <h2>Carteira</h2>
+            <span id="investmentReturnPercent">0%</span>
+          </div>
+          <div id="investmentList" class="list spaced"></div>
+        </div>
+      </section>
+
       <section class="screen" id="settingsScreen">
         <div class="page-title">
           <div><span class="eyebrow">AJUSTES</span><h2>Configurações</h2></div>
@@ -132,6 +163,7 @@
       <button class="nav-item" data-screen="transactionsScreen">↕<span>Mov.</span></button>
       <button class="nav-item" data-screen="billsScreen">▣<span>Contas</span></button>
       <button class="nav-item" data-screen="goalsScreen">◎<span>Metas</span></button>
+      <button class="nav-item" data-screen="investmentsScreen">◈<span>Invest.</span></button>
       <button class="nav-item" data-screen="settingsScreen">⚙<span>Ajustes</span></button>
     </nav>
   </div>
@@ -176,6 +208,36 @@
       <label>Valor da meta<input id="goalTarget" type="number" min="0.01" step="0.01" required></label>
       <label>Já guardado<input id="goalSaved" type="number" min="0" step="0.01" value="0"></label>
       <button class="primary" value="default">Salvar meta</button>
+    </form>
+  </dialog>
+
+
+  <dialog id="investmentModal">
+    <form method="dialog" id="investmentForm">
+      <div class="modal-head"><h3>Novo investimento</h3><button value="cancel" class="icon-btn">✕</button></div>
+      <label>Nome do ativo
+        <input id="investmentName" required placeholder="Ex.: Tesouro Selic, CDB, Bitcoin">
+      </label>
+      <label>Tipo
+        <select id="investmentType">
+          <option>Renda Fixa</option>
+          <option>Fundo</option>
+          <option>Ação</option>
+          <option>ETF</option>
+          <option>Criptomoeda</option>
+          <option>Outro</option>
+        </select>
+      </label>
+      <label>Total aportado
+        <input id="investmentInvested" type="number" min="0" step="0.01" required>
+      </label>
+      <label>Valor atual
+        <input id="investmentCurrent" type="number" min="0" step="0.01" required>
+      </label>
+      <label>Data de referência
+        <input id="investmentDate" type="date" required>
+      </label>
+      <button class="primary" value="default">Salvar investimento</button>
     </form>
   </dialog>
 

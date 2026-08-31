@@ -2,7 +2,7 @@ const KEY="epFinanceV1";
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
 
-const defaultData={transactions:[],bills:[],goals:[],settings:{budget:0,theme:"light",hideBalance:false}};
+const defaultData={transactions:[],bills:[],goals:[],investments:[],settings:{budget:0,theme:"light",hideBalance:false}};
 let data=load();
 let txFilter="all";
 
@@ -21,7 +21,7 @@ function iconFor(cat){const m={Moradia:"🏠","Alimentação":"🍽️","Transpo
 function renderAll(){
   document.body.classList.toggle("dark",data.settings.theme==="dark");
   $("#budgetInput").value=data.settings.budget||"";
-  renderHome(); renderTransactions(); renderBills(); renderGoals();
+  renderHome(); renderTransactions(); renderBills(); renderGoals(); renderInvestments();
 }
 
 function currentMonthTx(){const mk=monthKey();return data.transactions.filter(t=>monthKey(t.date)===mk);}
@@ -83,6 +83,68 @@ function renderGoals(){
   $$(".delete-goal").forEach(btn=>btn.onclick=()=>{data.goals=data.goals.filter(x=>x.id!==btn.dataset.id);save();});
 }
 
+
+function investedTotal(){
+  return (data.investments||[]).reduce((a,i)=>a+Number(i.invested||0),0);
+}
+function currentInvestmentTotal(){
+  return (data.investments||[]).reduce((a,i)=>a+Number(i.current||0),0);
+}
+function investmentResult(){
+  return currentInvestmentTotal()-investedTotal();
+}
+function renderInvestments(){
+  if(!data.investments)data.investments=[];
+  const invested=investedTotal();
+  const current=currentInvestmentTotal();
+  const result=investmentResult();
+  const pct=invested ? (result/invested*100) : 0;
+
+  $("#investedTotal").textContent=money(invested);
+  $("#currentInvestmentTotal").textContent=money(current);
+  $("#investmentResult").textContent=(result>=0?"+ ":"- ")+money(Math.abs(result));
+  $("#investmentResult").className=result>=0?"income":"expense";
+  $("#investmentReturnPercent").textContent=(pct>=0?"+":"")+pct.toFixed(2).replace(".",",")+"%";
+  $("#investmentReturnPercent").className=pct>=0?"income":"expense";
+
+  const list=[...(data.investments||[])].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  $("#investmentList").innerHTML=list.length?list.map(i=>{
+    const gain=Number(i.current)-Number(i.invested);
+    const ipct=Number(i.invested)?gain/Number(i.invested)*100:0;
+    return `<div class="item">
+      <div class="item-main">
+        <div class="item-icon">◈</div>
+        <div>
+          <div class="item-title">${esc(i.name)}</div>
+          <div class="investment-meta">
+            <span class="badge">${esc(i.type)}</span>
+            <span class="badge">${fmtDate(i.date)}</span>
+          </div>
+          <div class="item-sub">Aportado: ${money(i.invested)} • Atual: ${money(i.current)}</div>
+        </div>
+      </div>
+      <div>
+        <div class="amount ${gain>=0?"income":"expense"}">${gain>=0?"+ ":"- "}${money(Math.abs(gain))}</div>
+        <div class="item-sub" style="text-align:right">${ipct>=0?"+":""}${ipct.toFixed(2).replace(".",",")}%</div>
+        <div class="investment-actions">
+          <button class="text-btn edit-investment" data-id="${i.id}">Atualizar</button>
+          <button class="text-btn delete-investment" data-id="${i.id}">Excluir</button>
+        </div>
+      </div>
+    </div>`;
+  }).join(""):`<div class="empty">Adicione seu primeiro investimento.</div>`;
+
+  $$(".edit-investment").forEach(btn=>btn.onclick=()=>{
+    const inv=data.investments.find(x=>x.id===btn.dataset.id);
+    const val=Number(prompt("Qual é o valor atual deste investimento?", inv.current)||inv.current);
+    if(Number.isFinite(val) && val>=0){inv.current=val;inv.date=today();save();}
+  });
+  $$(".delete-investment").forEach(btn=>btn.onclick=()=>{
+    data.investments=data.investments.filter(x=>x.id!==btn.dataset.id);
+    save();
+  });
+}
+
 function go(screen){
   $$(".screen").forEach(s=>s.classList.toggle("active",s.id===screen));
   $$(".nav-item").forEach(n=>n.classList.toggle("active",n.dataset.screen===screen));
@@ -99,6 +161,7 @@ setupModal("#openTransactionModal","#transactionModal","#txDate");
 setupModal("#fab","#transactionModal","#txDate");
 setupModal("#openBillModal","#billModal","#billDue");
 setupModal("#openGoalModal","#goalModal");
+setupModal("#openInvestmentModal","#investmentModal","#investmentDate");
 
 $("#transactionForm").addEventListener("submit",e=>{
   if(e.submitter?.value==="cancel")return;
@@ -118,6 +181,24 @@ $("#goalForm").addEventListener("submit",e=>{
   data.goals.push({id:id(),name:$("#goalName").value.trim(),target:Number($("#goalTarget").value),saved:Number($("#goalSaved").value||0)});
   e.target.reset(); $("#goalModal").close(); save();
 });
+
+$("#investmentForm").addEventListener("submit",e=>{
+  if(e.submitter?.value==="cancel")return;
+  e.preventDefault();
+  if(!data.investments)data.investments=[];
+  data.investments.push({
+    id:id(),
+    name:$("#investmentName").value.trim(),
+    type:$("#investmentType").value,
+    invested:Number($("#investmentInvested").value),
+    current:Number($("#investmentCurrent").value),
+    date:$("#investmentDate").value
+  });
+  e.target.reset();
+  $("#investmentModal").close();
+  save();
+});
+
 $$(".chip").forEach(c=>c.onclick=()=>{$$(".chip").forEach(x=>x.classList.remove("active"));c.classList.add("active");txFilter=c.dataset.filter;renderTransactions();});
 
 $("#saveSettings").onclick=()=>{data.settings.budget=Number($("#budgetInput").value||0);save();alert("Orçamento salvo.");};
@@ -130,7 +211,7 @@ $("#exportData").onclick=()=>{
 };
 $("#importData").onchange=async e=>{
   const file=e.target.files[0]; if(!file)return;
-  try{const parsed=JSON.parse(await file.text());data={...defaultData,...parsed};save();alert("Backup restaurado.");}
+  try{const parsed=JSON.parse(await file.text());data={...defaultData,...parsed,settings:{...defaultData.settings,...(parsed.settings||{})}}; if(!data.investments)data.investments=[]; save();alert("Backup restaurado.");}
   catch{alert("Arquivo de backup inválido.");}
 };
 $("#clearData").onclick=()=>{if(confirm("Apagar todos os dados do EP Finance neste aparelho?")){data=structuredClone(defaultData);save();}};

@@ -18,3 +18,11 @@ PWA de controle financeiro pessoal.
 - Backup e restauração em JSON
 - Funcionamento offline após o primeiro carregamento
 - Dados salvos no navegador do aparelho
+
+## Novidades V1.1
+- Área de investimentos
+- Carteira por tipo de ativo
+- Total aportado e valor atual
+- Resultado em R$ e %
+- Atualização manual do valor do ativo
+- Patrimônio investido separado do caixa do dia a dia
