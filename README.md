@@ -37,3 +37,23 @@ PWA de controle financeiro pessoal.
 - Forma de pagamento e observação nos lançamentos
 - Migração automática dos dados da V1/V1.1
 - Service Worker atualizado para reduzir cache de versão antiga
+
+
+## V1.3 — Login, nuvem e relatório mensal
+- Cadastro e login com e-mail/senha via Supabase Auth
+- Confirmação de e-mail e recuperação de senha
+- Sincronização automática dos dados financeiros com Supabase
+- Dados isolados por usuário com Row Level Security (RLS)
+- Preferência para receber relatório mensal por e-mail
+- Edge Function pronta para gerar resumo mensal
+- Envio via Resend
+- Logout remove o cache financeiro local do aparelho
+
+### Configuração
+1. Crie um projeto no Supabase.
+2. Execute `supabase/schema.sql` no SQL Editor.
+3. Copie URL e chave pública/publishable para `config.js`. Nunca coloque `service_role` no frontend.
+4. Em Auth, configure a URL do seu site Render em Site URL/Redirect URLs.
+5. Crie uma conta Resend, verifique seu domínio (para produção) e configure `RESEND_API_KEY`, `FROM_EMAIL` e `CRON_SECRET` nos secrets da Edge Function.
+6. Faça deploy da função `monthly-report`.
+7. Configure o job mensal conforme `supabase/CRON_SETUP.md`.
