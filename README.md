@@ -57,3 +57,13 @@ PWA de controle financeiro pessoal.
 5. Crie uma conta Resend, verifique seu domínio (para produção) e configure `RESEND_API_KEY`, `FROM_EMAIL` e `CRON_SECRET` nos secrets da Edge Function.
 6. Faça deploy da função `monthly-report`.
 7. Configure o job mensal conforme `supabase/CRON_SETUP.md`.
+
+
+## V1.3.2 - correções de autenticação e sincronização
+- Corrigida a aba Criar conta que podia ficar sem ação quando a configuração falhava.
+- auth.js aceita SUPABASE_PUBLISHABLE_KEY e SUPABASE_ANON_KEY.
+- Corrigida a chave local de sincronização para epFinanceV12 (mesma usada pelo app.js).
+- Corrigido possível loop de reload quando finance_data existe vazio (`{}`).
+- Migração automática do armazenamento legado epFinanceV1.
+- Cache do PWA atualizado para buscar JS/HTML novos primeiro.
+- Query string v=1.3.2 nos arquivos principais para reduzir cache antigo no Render/iPhone.
