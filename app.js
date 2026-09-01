@@ -450,75 +450,182 @@ function urlBase64ToUint8Array(base64String){
   return Uint8Array.from([...rawData].map(char=>char.charCodeAt(0)));
 }
 
+
+function showPushDiagnostic(message, type="error"){
+  const box=document.getElementById("pushDiagnostic");
+  if(!box)return;
+  box.hidden=false;
+  box.className=`push-diagnostic ${type}`;
+  box.textContent=message;
+}
+
+function clearPushDiagnostic(){
+  const box=document.getElementById("pushDiagnostic");
+  if(!box)return;
+  box.hidden=true;
+  box.textContent="";
+}
+
+function pushErrorText(err){
+  if(!err)return "Erro desconhecido.";
+  const name=err.name?`${err.name}: `:"";
+  return name+(err.message||String(err));
+}
+
 async function persistPushSubscription(subscription){
-  if(!subscription)return false;
-  if(!window.epSupabase){
-    console.warn("EP Finance: Supabase ainda não disponível para salvar a subscription.");
+  if(!subscription){
+    showPushDiagnostic("Não existe uma PushSubscription para salvar.");
     return false;
   }
 
-  const {data:{user},error:userError}=await window.epSupabase.auth.getUser();
-  if(userError||!user){
-    console.warn("EP Finance: usuário ainda não autenticado para salvar a subscription.");
+  if(!window.epSupabase){
+    showPushDiagnostic("Supabase ainda não foi carregado no aplicativo.");
+    return false;
+  }
+
+  let userResult;
+  try{
+    userResult=await window.epSupabase.auth.getUser();
+  }catch(err){
+    showPushDiagnostic("Falha ao consultar o usuário: "+pushErrorText(err));
+    return false;
+  }
+
+  const user=userResult?.data?.user;
+  const userError=userResult?.error;
+
+  if(userError){
+    showPushDiagnostic("Erro de autenticação: "+(userError.message||String(userError)));
+    return false;
+  }
+
+  if(!user){
+    showPushDiagnostic("Nenhum usuário autenticado. Saia da conta e entre novamente.");
     return false;
   }
 
   const j=subscription.toJSON();
+
+  if(!j.endpoint){
+    showPushDiagnostic("A assinatura Push não retornou endpoint.");
+    return false;
+  }
+
+  if(!j.keys?.p256dh || !j.keys?.auth){
+    showPushDiagnostic("A assinatura Push não retornou as chaves p256dh/auth.");
+    return false;
+  }
+
   const payload={
     user_id:user.id,
     endpoint:j.endpoint,
-    p256dh:j.keys?.p256dh||"",
-    auth:j.keys?.auth||"",
+    p256dh:j.keys.p256dh,
+    auth:j.keys.auth,
     user_agent:navigator.userAgent,
     updated_at:new Date().toISOString()
   };
 
-  const {error}=await window.epSupabase
-    .from("push_subscriptions")
-    .upsert(payload,{onConflict:"endpoint"});
-
-  if(error){
-    console.error("EP Finance: erro ao salvar push subscription:",error);
+  let result;
+  try{
+    result=await window.epSupabase
+      .from("push_subscriptions")
+      .upsert(payload,{onConflict:"endpoint"})
+      .select("id,user_id,endpoint")
+      .maybeSingle();
+  }catch(err){
+    showPushDiagnostic("Falha de rede ao salvar no Supabase: "+pushErrorText(err));
     return false;
   }
 
-  console.info("EP Finance: dispositivo registrado em push_subscriptions.");
+  if(result.error){
+    const code=result.error.code?` [${result.error.code}]`:"";
+    showPushDiagnostic(
+      "Supabase recusou o dispositivo"+code+": "+
+      (result.error.message||"erro desconhecido")+
+      (result.error.details?` — ${result.error.details}`:"")
+    );
+    return false;
+  }
+
+  clearPushDiagnostic();
+  showPushDiagnostic("Dispositivo registrado com sucesso no Supabase ✅","success");
+  console.info("EP Finance: dispositivo registrado em push_subscriptions.",result.data);
   return true;
 }
 
 async function subscribeForPush(){
-  if(!notificationSupported())return null;
-  if(Notification.permission!=="granted")return null;
+  clearPushDiagnostic();
 
-  const registration=await navigator.serviceWorker.ready;
-  const vapid=window.EP_CONFIG?.VAPID_PUBLIC_KEY;
-
-  if(!vapid){
-    console.warn("EP Finance: VAPID_PUBLIC_KEY ainda não configurada.");
+  if(!notificationSupported()){
+    showPushDiagnostic("Este navegador não oferece Notification + Service Worker.");
     return null;
   }
 
-  let subscription=await registration.pushManager.getSubscription();
-
-  if(!subscription){
-    subscription=await registration.pushManager.subscribe({
-      userVisibleOnly:true,
-      applicationServerKey:urlBase64ToUint8Array(vapid)
-    });
+  if(Notification.permission!=="granted"){
+    showPushDiagnostic("Permissão de notificação não está como granted.");
+    return null;
   }
 
-  await persistPushSubscription(subscription);
+  const vapid=window.EP_CONFIG?.VAPID_PUBLIC_KEY;
+  if(!vapid){
+    showPushDiagnostic("VAPID_PUBLIC_KEY está vazia no config.js.");
+    return null;
+  }
+
+  let registration;
+  try{
+    registration=await navigator.serviceWorker.ready;
+  }catch(err){
+    showPushDiagnostic("Service Worker não ficou pronto: "+pushErrorText(err));
+    return null;
+  }
+
+  if(!registration.pushManager){
+    showPushDiagnostic("PushManager não está disponível neste PWA.");
+    return null;
+  }
+
+  let subscription;
+  try{
+    subscription=await registration.pushManager.getSubscription();
+  }catch(err){
+    showPushDiagnostic("Falha ao consultar subscription existente: "+pushErrorText(err));
+    return null;
+  }
+
+  if(!subscription){
+    try{
+      subscription=await registration.pushManager.subscribe({
+        userVisibleOnly:true,
+        applicationServerKey:urlBase64ToUint8Array(vapid)
+      });
+    }catch(err){
+      showPushDiagnostic("Falha ao criar PushSubscription: "+pushErrorText(err));
+      return null;
+    }
+  }
+
+  const saved=await persistPushSubscription(subscription);
+  if(!saved)return null;
+
   return subscription;
 }
 
 async function ensurePushRegistration(){
-  if(!notificationSupported())return false;
-  if(Notification.permission!=="granted")return false;
+  if(!notificationSupported()){
+    showPushDiagnostic("Notificações Web Push não são suportadas neste navegador.");
+    return false;
+  }
+  if(Notification.permission!=="granted"){
+    showPushDiagnostic("A permissão de notificações ainda não foi concedida.");
+    return false;
+  }
 
   try{
     const subscription=await subscribeForPush();
     return Boolean(subscription);
   }catch(err){
+    showPushDiagnostic("Falha inesperada no registro Push: "+pushErrorText(err));
     console.error("EP Finance: falha ao garantir registro push:",err);
     return false;
   }
@@ -545,7 +652,7 @@ async function enableNotifications(){
           {tag:"ep-finance-enabled",url:"./"}
         );
       }else{
-        alert("A permissão está ativa, mas o dispositivo ainda não pôde ser salvo no Supabase.");
+        alert("Não foi possível sincronizar. Veja o diagnóstico exibido logo abaixo das preferências de notificações.");
       }
     }
   }catch(err){

@@ -127,3 +127,10 @@ Notificações automáticas com o app fechado exigem configurar VAPID e publicar
 - Botão para sincronizar manualmente o dispositivo.
 - Subscription existente é reutilizada e salva no Supabase.
 - Cache atualizado para v1.6.1.
+
+
+## V1.6.2 — Diagnóstico Web Push
+- Exibe no próprio iPhone a causa exata de falha no registro.
+- Diagnostica Service Worker, PushManager, VAPID, autenticação e RLS/Supabase.
+- `ensurePushRegistration()` só retorna sucesso quando o registro foi realmente salvo no banco.
+- Cache atualizado para v1.6.2.
