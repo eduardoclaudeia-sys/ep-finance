@@ -3,4 +3,5 @@
 window.EP_CONFIG = {
   SUPABASE_URL: "https://nmrmghaarydsgqkdvinj.supabase.co",
   SUPABASE_PUBLISHABLE_KEY: "sb_publishable_5zncFVn34v1WfyLLRaT3og_vjxwZLu0"
+  ,VAPID_PUBLIC_KEY: ""
 };

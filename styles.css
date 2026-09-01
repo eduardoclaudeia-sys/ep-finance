@@ -18,3 +18,14 @@
 .period-controls input[type="month"]{max-width:150px;border:1px solid var(--line);background:var(--bg);color:var(--text);padding:9px;border-radius:12px;font-weight:700}
 .period-btn{width:36px;height:36px;font-size:22px;box-shadow:none;background:var(--bg)}
 @media(max-width:480px){.dashboard-period{align-items:flex-start;flex-direction:column}.period-controls{width:100%}.period-controls input[type="month"]{flex:1;max-width:none}}
+
+/* EP Finance V1.6 — Notificações */
+.notification-card{display:grid;gap:12px}
+.settings-title-row{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}
+.settings-title-row h3{margin:0}
+.settings-title-row p{margin:5px 0 0}
+.status-badge{font-size:11px;font-weight:800;padding:6px 9px;border-radius:999px;background:var(--line);color:var(--muted);white-space:nowrap}
+.status-badge.on{background:rgba(34,197,94,.14);color:var(--good)}
+.status-badge.off{background:rgba(239,68,68,.12);color:var(--bad)}
+.notification-options{display:grid;gap:2px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:8px 0}
+.settings-help{color:var(--muted);line-height:1.4}

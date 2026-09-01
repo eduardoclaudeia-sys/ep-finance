@@ -357,4 +357,219 @@ $("#importData").onchange=async e=>{const file=e.target.files[0];if(!file)return
 $("#clearData").onclick=()=>{if(confirm("Apagar todos os dados do EP Finance neste aparelho?")){data=structuredClone(defaultData);save();}};
 
 if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js"));}
+
+// ============================================
+// NOTIFICAÇÕES
+// ============================================
+
+function getNotificationPreferences(){
+  return {
+    bills3Days: data.settings?.notifications?.bills3Days ?? true,
+    bills1Day: data.settings?.notifications?.bills1Day ?? true,
+    billsOverdue: data.settings?.notifications?.billsOverdue ?? true,
+    budget80: data.settings?.notifications?.budget80 ?? true,
+    budget100: data.settings?.notifications?.budget100 ?? true,
+    weeklySummary: data.settings?.notifications?.weeklySummary ?? false,
+    investmentReminder: data.settings?.notifications?.investmentReminder ?? false
+  };
+}
+
+function setNotificationInputs(){
+  const p=getNotificationPreferences();
+  const map={
+    notifyBills3Days:p.bills3Days,
+    notifyBills1Day:p.bills1Day,
+    notifyBillsOverdue:p.billsOverdue,
+    notifyBudget80:p.budget80,
+    notifyBudget100:p.budget100,
+    notifyWeeklySummary:p.weeklySummary,
+    notifyInvestmentReminder:p.investmentReminder
+  };
+  Object.entries(map).forEach(([id,val])=>{
+    const el=document.getElementById(id);
+    if(el)el.checked=val;
+  });
+}
+
+function notificationSupported(){
+  return "Notification" in window && "serviceWorker" in navigator;
+}
+
+function isStandalonePWA(){
+  return window.matchMedia?.("(display-mode: standalone)")?.matches || window.navigator.standalone===true;
+}
+
+function updateNotificationUI(){
+  const support=document.getElementById("notificationSupportText");
+  const badge=document.getElementById("notificationStatusBadge");
+  const enable=document.getElementById("enableNotifications");
+  const test=document.getElementById("testNotification");
+  if(!support||!badge||!enable||!test)return;
+
+  if(!notificationSupported()){
+    support.textContent="Este navegador não oferece suporte a notificações web.";
+    badge.textContent="Indisponível";
+    badge.className="status-badge off";
+    enable.disabled=true;test.disabled=true;
+    return;
+  }
+
+  const permission=Notification.permission;
+  if(permission==="granted"){
+    support.textContent=isStandalonePWA()
+      ?"Notificações autorizadas neste aparelho."
+      :"Autorizadas. No iPhone, use o app instalado na Tela de Início para Web Push.";
+    badge.textContent="Ativas";
+    badge.className="status-badge on";
+    enable.textContent="Notificações ativadas";
+    enable.disabled=true;
+    test.disabled=false;
+  }else if(permission==="denied"){
+    support.textContent="A permissão foi bloqueada. Libere notificações nas configurações do navegador/aparelho.";
+    badge.textContent="Bloqueadas";
+    badge.className="status-badge off";
+    enable.textContent="Permissão bloqueada";
+    enable.disabled=true;
+    test.disabled=true;
+  }else{
+    support.textContent=isStandalonePWA()
+      ?"Toque em Ativar notificações para autorizar o EP Finance."
+      :"No iPhone, adicione o EP Finance à Tela de Início antes de ativar.";
+    badge.textContent="Desativadas";
+    badge.className="status-badge";
+    enable.textContent="Ativar notificações";
+    enable.disabled=false;
+    test.disabled=true;
+  }
+}
+
+function urlBase64ToUint8Array(base64String){
+  const padding="=".repeat((4-base64String.length%4)%4);
+  const base64=(base64String+padding).replace(/-/g,"+").replace(/_/g,"/");
+  const rawData=atob(base64);
+  return Uint8Array.from([...rawData].map(char=>char.charCodeAt(0)));
+}
+
+async function subscribeForPush(){
+  if(Notification.permission!=="granted")return null;
+  const registration=await navigator.serviceWorker.ready;
+  const vapid=window.EP_CONFIG?.VAPID_PUBLIC_KEY;
+
+  // Enquanto a VAPID não estiver configurada, notificações locais/teste continuam funcionando.
+  if(!vapid){
+    console.warn("EP Finance: VAPID_PUBLIC_KEY ainda não configurada.");
+    return null;
+  }
+
+  let subscription=await registration.pushManager.getSubscription();
+  if(!subscription){
+    subscription=await registration.pushManager.subscribe({
+      userVisibleOnly:true,
+      applicationServerKey:urlBase64ToUint8Array(vapid)
+    });
+  }
+
+  if(window.epSupabase){
+    const {data:{user}}=await window.epSupabase.auth.getUser();
+    if(user){
+      const j=subscription.toJSON();
+      const {error}=await window.epSupabase.from("push_subscriptions").upsert({
+        user_id:user.id,
+        endpoint:j.endpoint,
+        p256dh:j.keys?.p256dh||"",
+        auth:j.keys?.auth||"",
+        user_agent:navigator.userAgent,
+        updated_at:new Date().toISOString()
+      },{onConflict:"endpoint"});
+      if(error)console.error("Erro ao salvar push subscription:",error);
+    }
+  }
+  return subscription;
+}
+
+async function enableNotifications(){
+  if(!notificationSupported())return;
+  try{
+    const permission=await Notification.requestPermission();
+    updateNotificationUI();
+    if(permission==="granted"){
+      await subscribeForPush();
+      await sendLocalNotification(
+        "EP Finance",
+        "Notificações ativadas com sucesso 🔔",
+        {tag:"ep-finance-enabled",url:"./"}
+      );
+    }
+  }catch(err){
+    console.error(err);
+    alert("Não foi possível ativar as notificações neste aparelho.");
+  }
+}
+
+async function sendLocalNotification(title,body,options={}){
+  if(!notificationSupported()||Notification.permission!=="granted")return false;
+  const registration=await navigator.serviceWorker.ready;
+  await registration.showNotification(title,{
+    body,
+    icon:"./icons/icon-192.png",
+    badge:"./icons/icon-192.png",
+    tag:options.tag||"ep-finance",
+    data:{url:options.url||"./",...(options.data||{})}
+  });
+  return true;
+}
+
+async function testNotification(){
+  const ok=await sendLocalNotification(
+    "EP Finance",
+    "Teste concluído. Suas notificações estão funcionando ✅",
+    {tag:"ep-finance-test"}
+  );
+  if(!ok)alert("Ative as notificações primeiro.");
+}
+
+function saveNotificationPreferences(){
+  data.settings=data.settings||{};
+  data.settings.notifications={
+    bills3Days:$("#notifyBills3Days").checked,
+    bills1Day:$("#notifyBills1Day").checked,
+    billsOverdue:$("#notifyBillsOverdue").checked,
+    budget80:$("#notifyBudget80").checked,
+    budget100:$("#notifyBudget100").checked,
+    weeklySummary:$("#notifyWeeklySummary").checked,
+    investmentReminder:$("#notifyInvestmentReminder").checked
+  };
+  save();
+  if(window.epSupabase){
+    window.epSupabase.auth.getUser().then(async({data:{user}})=>{
+      if(!user)return;
+      const {error}=await window.epSupabase.from("notification_preferences").upsert({
+        user_id:user.id,
+        preferences:data.settings.notifications,
+        updated_at:new Date().toISOString()
+      },{onConflict:"user_id"});
+      if(error)console.error(error);
+    });
+  }
+  alert("Preferências de notificações salvas.");
+}
+
+function initNotifications(){
+  setNotificationInputs();
+  updateNotificationUI();
+
+  const enable=document.getElementById("enableNotifications");
+  const test=document.getElementById("testNotification");
+  const saveBtn=document.getElementById("saveNotificationPreferences");
+  if(enable)enable.onclick=enableNotifications;
+  if(test)test.onclick=testNotification;
+  if(saveBtn)saveBtn.onclick=saveNotificationPreferences;
+
+  document.addEventListener("visibilitychange",()=>{
+    if(document.visibilityState==="visible")updateNotificationUI();
+  });
+}
+
+
 renderAll();
+initNotifications();

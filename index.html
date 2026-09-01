@@ -180,6 +180,32 @@
         </div>
         <div class="settings-card"><h3>Backup</h3><p>Exporte seus dados antes de trocar de aparelho ou limpar o navegador.</p><div class="stack"><button id="exportData" class="secondary" type="button">Exportar backup</button><label class="secondary file-label">Importar backup<input id="importData" type="file" accept="application/json" hidden></label></div></div>
 
+        <div class="settings-card notification-card">
+          <div class="settings-title-row">
+            <div>
+              <h3>Notificações</h3>
+              <p id="notificationSupportText">Verificando compatibilidade deste aparelho...</p>
+            </div>
+            <span id="notificationStatusBadge" class="status-badge">Desativadas</span>
+          </div>
+
+          <button id="enableNotifications" class="primary" type="button">Ativar notificações</button>
+          <button id="testNotification" class="secondary" type="button">Enviar notificação de teste</button>
+
+          <div class="notification-options">
+            <label class="toggle-row"><span>Contas 3 dias antes</span><input id="notifyBills3Days" type="checkbox"></label>
+            <label class="toggle-row"><span>Contas 1 dia antes</span><input id="notifyBills1Day" type="checkbox"></label>
+            <label class="toggle-row"><span>Contas vencidas</span><input id="notifyBillsOverdue" type="checkbox"></label>
+            <label class="toggle-row"><span>Orçamento em 80%</span><input id="notifyBudget80" type="checkbox"></label>
+            <label class="toggle-row"><span>Orçamento em 100%</span><input id="notifyBudget100" type="checkbox"></label>
+            <label class="toggle-row"><span>Resumo semanal</span><input id="notifyWeeklySummary" type="checkbox"></label>
+            <label class="toggle-row"><span>Lembrete mensal de aporte</span><input id="notifyInvestmentReminder" type="checkbox"></label>
+          </div>
+
+          <button id="saveNotificationPreferences" class="secondary" type="button">Salvar preferências</button>
+          <small class="settings-help">No iPhone, instale o EP Finance na Tela de Início antes de ativar notificações.</small>
+        </div>
+
         <div class="settings-card">
           <h3>Relatório mensal por e-mail</h3>
           <p>Receba no início de cada mês um resumo do mês anterior com receitas, despesas, resultado, maiores categorias e patrimônio.</p>

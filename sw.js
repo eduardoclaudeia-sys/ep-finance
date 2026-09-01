@@ -1,4 +1,4 @@
-const CACHE_NAME = "ep-finance-v1.5.0";
+const CACHE_NAME = "ep-finance-v1.6.0";
 const STATIC_FILES = [
   "./",
   "./index.html",
@@ -62,6 +62,47 @@ self.addEventListener("fetch", event => {
         }
         return response;
       });
+    })
+  );
+});
+
+
+self.addEventListener("push", event => {
+  let payload = {};
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch {
+    payload = { body: event.data ? event.data.text() : "Você tem uma nova notificação." };
+  }
+
+  const title = payload.title || "EP Finance";
+  const options = {
+    body: payload.body || "Você tem uma atualização financeira.",
+    icon: "./icons/icon-192.png",
+    badge: "./icons/icon-192.png",
+    tag: payload.tag || "ep-finance-push",
+    data: {
+      url: payload.url || "./",
+      ...(payload.data || {})
+    }
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", event => {
+  event.notification.close();
+  const targetUrl = new URL(event.notification.data?.url || "./", self.location.origin).href;
+
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then(windowClients => {
+      for (const client of windowClients) {
+        if ("focus" in client) {
+          client.navigate(targetUrl);
+          return client.focus();
+        }
+      }
+      return clients.openWindow ? clients.openWindow(targetUrl) : undefined;
     })
   );
 });

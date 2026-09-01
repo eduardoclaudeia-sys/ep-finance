@@ -103,3 +103,17 @@ Correções e melhorias:
 - Agenda financeira do Dashboard combina lançamentos agendados e contas pendentes.
 - Saldo projetado calcula o saldo atual menos/mais compromissos e receitas até o fim do mês selecionado.
 - A aba Contas continua sendo controle de obrigações; ao pagar, a despesa é registrada no Extrato.
+
+
+## V1.6 — Central de Notificações
+- Botão para solicitar permissão de notificações.
+- Botão de notificação de teste.
+- Preferências para vencimentos, orçamento, resumo semanal e aportes.
+- Service Worker recebe Web Push e abre o app ao tocar na notificação.
+- Tabelas Supabase para subscriptions e preferências.
+- Edge Function preparada para alertas automáticos de contas e orçamento.
+- Estrutura VAPID pronta para notificações com o app fechado.
+
+### Importante
+Notificações de teste funcionam após a permissão do navegador.
+Notificações automáticas com o app fechado exigem configurar VAPID e publicar a Edge Function.
