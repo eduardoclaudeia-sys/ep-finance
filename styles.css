@@ -10,3 +10,11 @@
 .info-card span{font-size:12px;line-height:1.45;color:var(--muted)}
 .scheduled-day{border-left:3px solid var(--warning);padding-left:10px}
 .scheduled-day .statement-day-head span:first-child{color:var(--warning)}
+
+/* V1.5 dashboard mensal */
+.dashboard-period{margin:18px 0 4px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.dashboard-period strong{display:block;margin-top:4px;font-size:16px}
+.period-controls{display:flex;align-items:center;gap:6px}
+.period-controls input[type="month"]{max-width:150px;border:1px solid var(--line);background:var(--bg);color:var(--text);padding:9px;border-radius:12px;font-weight:700}
+.period-btn{width:36px;height:36px;font-size:22px;box-shadow:none;background:var(--bg)}
+@media(max-width:480px){.dashboard-period{align-items:flex-start;flex-direction:column}.period-controls{width:100%}.period-controls input[type="month"]{flex:1;max-width:none}}

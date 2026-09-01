@@ -52,15 +52,27 @@
           </div>
         </div>
 
+        <section class="dashboard-period">
+          <div>
+            <span class="eyebrow">COMPETÊNCIA</span>
+            <strong id="dashboardMonthLabel">Mês atual</strong>
+          </div>
+          <div class="period-controls">
+            <button id="prevDashboardMonth" class="icon-btn period-btn" type="button" aria-label="Mês anterior">‹</button>
+            <input id="dashboardMonth" type="month" aria-label="Mês de referência do dashboard">
+            <button id="nextDashboardMonth" class="icon-btn period-btn" type="button" aria-label="Próximo mês">›</button>
+          </div>
+        </section>
+
         <div class="dashboard-grid">
           <button class="metric-card" type="button" data-go="transactionsScreen">
-            <span>Receitas futuras</span><strong id="futureIncome">R$ 0,00</strong><small>Lançamentos após hoje</small>
+            <span>Receitas previstas</span><strong id="futureIncome">R$ 0,00</strong><small id="futureIncomeHint">No mês selecionado</small>
           </button>
           <button class="metric-card" type="button" data-go="transactionsScreen">
-            <span>Despesas futuras</span><strong id="futureExpense">R$ 0,00</strong><small>Ainda não descontadas</small>
+            <span>Compromissos futuros</span><strong id="futureExpense">R$ 0,00</strong><small id="futureExpenseHint">Extrato agendado + Contas pendentes</small>
           </button>
           <button class="metric-card wide projection-card" type="button" data-go="transactionsScreen">
-            <span>Saldo projetado</span><strong id="projectedBalance">R$ 0,00</strong><small>Saldo de hoje + todos os lançamentos futuros</small>
+            <span>Saldo projetado</span><strong id="projectedBalance">R$ 0,00</strong><small id="projectedBalanceHint">Até o fim do mês selecionado</small>
           </button>
           <button class="metric-card" type="button" data-go="investmentsScreen">
             <span>Investimentos</span><strong id="homeInvestments">R$ 0,00</strong><small>Valor atual da carteira</small>
@@ -71,7 +83,7 @@
         </div>
 
         <section class="section-block">
-          <div class="section-head"><h2>Resumo realizado do mês</h2><span id="monthResult">R$ 0,00</span></div>
+          <div class="section-head"><h2 id="monthSummaryTitle">Resumo realizado do mês</h2><span id="monthResult">R$ 0,00</span></div>
           <div class="monthly-split">
             <div><span>Entrou</span><b id="summaryIncome">R$ 0,00</b></div>
             <div><span>Saiu</span><b id="summaryExpense">R$ 0,00</b></div>
@@ -80,13 +92,13 @@
         </section>
 
         <section class="section-block">
-          <div class="section-head"><h2>Orçamento do mês</h2><span id="budgetPercent">0%</span></div>
+          <div class="section-head"><h2 id="budgetTitle">Orçamento do mês</h2><span id="budgetPercent">0%</span></div>
           <div class="progress"><div id="budgetBar"></div></div>
           <p id="budgetText">Defina um orçamento mensal nas configurações.</p>
         </section>
 
         <section class="section-block">
-          <div class="section-head"><h2>Gastos por categoria</h2><button class="text-btn" type="button" data-go="transactionsScreen">Abrir extrato</button></div>
+          <div class="section-head"><h2 id="categoryTitle">Gastos por categoria</h2><button class="text-btn" type="button" data-go="transactionsScreen">Abrir extrato</button></div>
           <div id="categoryBreakdown" class="category-breakdown"></div>
         </section>
 
@@ -140,7 +152,7 @@
 
       <section class="screen" id="billsScreen">
         <div class="page-title"><div><span class="eyebrow">CONTAS</span><h2>Vencimentos</h2></div><button id="openBillModal" class="primary small" type="button">+ Conta</button></div>
-        <div class="info-card"><strong>Contas não mexem no saldo sozinhas.</strong><span>Use “Pagar hoje” para registrar a saída na data do pagamento e evitar desconto duplicado.</span></div>
+        <div class="info-card"><strong>Contas = compromissos e vencimentos.</strong><span>Enquanto estiver pendente, a conta entra nos compromissos futuros do Dashboard, mas não reduz o saldo atual. Ao usar “Pagar hoje”, ela vira uma saída no Extrato.</span></div>
         <div id="billList" class="list spaced"></div>
       </section>
 

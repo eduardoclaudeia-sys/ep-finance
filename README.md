@@ -93,3 +93,13 @@ Correções e melhorias:
 - Alterações em conta paga sincronizam com a movimentação criada pelo pagamento.
 - Ao mudar uma conta paga para pendente, a movimentação automática vinculada é removida.
 - Movimentações vinculadas a contas preservam o vínculo ao serem editadas.
+
+
+## V1.5 — Dashboard mensal e Contas nos compromissos futuros
+- Dashboard ganhou seletor de competência (mês/ano) com botões anterior/próximo.
+- Resumo, orçamento e categorias passam a exibir explicitamente o mês selecionado.
+- Contas pendentes com vencimento futuro entram em Compromissos futuros do Dashboard.
+- Compromissos futuros = despesas agendadas no Extrato + Contas pendentes do mês, sem descontar o saldo atual.
+- Agenda financeira do Dashboard combina lançamentos agendados e contas pendentes.
+- Saldo projetado calcula o saldo atual menos/mais compromissos e receitas até o fim do mês selecionado.
+- A aba Contas continua sendo controle de obrigações; ao pagar, a despesa é registrada no Extrato.

@@ -6,6 +6,7 @@ const categories=["Moradia","Alimentação","Transporte","Saúde","Educação","
 const defaultData={transactions:[],bills:[],goals:[],investments:[],settings:{budget:0,theme:"light",hideBalance:false,userName:""}};
 let data=load();
 let txFilter="all";
+let dashboardMonthKey=monthKey();
 
 function load(){
   try{
@@ -27,6 +28,8 @@ function today(){
 }
 function monthKey(d){return (d||today()).slice(0,7);}
 function fmtDate(d){if(!d)return"";return new Date(d+"T12:00:00").toLocaleDateString("pt-BR");}
+function fmtMonth(mk){if(!mk)return"";const [y,m]=mk.split("-").map(Number);return new Date(y,m-1,1).toLocaleDateString("pt-BR",{month:"long",year:"numeric"}).replace(/^./,c=>c.toUpperCase());}
+function shiftMonth(mk,delta){const [y,m]=mk.split("-").map(Number),d=new Date(y,m-1+delta,1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;}
 function id(){return crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random();}
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));}
 function iconFor(cat){const m={Moradia:"🏠",Alimentação:"🍽️",Transporte:"🚗",Saúde:"❤️",Educação:"🎓",Lazer:"🎮",Salário:"💼",Investimentos:"📈",Outros:"•"};return m[cat]||"•";}
@@ -42,15 +45,27 @@ function isFutureTx(t){return Boolean(t?.date)&&t.date>today();}
 function isRealizedTx(t){return !isFutureTx(t);}
 function realizedTransactions(){return data.transactions.filter(isRealizedTx);}
 function futureTransactions(){return data.transactions.filter(isFutureTx);}
-function currentMonthTx(){const mk=monthKey();return realizedTransactions().filter(t=>monthKey(t.date)===mk);}
-function allCurrentMonthTx(){const mk=monthKey();return data.transactions.filter(t=>monthKey(t.date)===mk);}
-function monthIncome(){return currentMonthTx().filter(t=>t.type==="income").reduce((a,b)=>a+Number(b.value),0);}
-function monthExpense(){return currentMonthTx().filter(t=>t.type==="expense").reduce((a,b)=>a+Number(b.value),0);}
-function futureIncome(){return futureTransactions().filter(t=>t.type==="income").reduce((a,b)=>a+Number(b.value),0);}
-function futureExpense(){return futureTransactions().filter(t=>t.type==="expense").reduce((a,b)=>a+Number(b.value),0);}
+function monthTransactions(mk=dashboardMonthKey){return realizedTransactions().filter(t=>monthKey(t.date)===mk);}
+function currentMonthTx(){return monthTransactions(dashboardMonthKey);}
+function allCurrentMonthTx(){return data.transactions.filter(t=>monthKey(t.date)===dashboardMonthKey);}
+function monthIncome(mk=dashboardMonthKey){return monthTransactions(mk).filter(t=>t.type==="income").reduce((a,b)=>a+Number(b.value),0);}
+function monthExpense(mk=dashboardMonthKey){return monthTransactions(mk).filter(t=>t.type==="expense").reduce((a,b)=>a+Number(b.value),0);}
+function futureTransactionsForMonth(mk=dashboardMonthKey){return futureTransactions().filter(t=>monthKey(t.date)===mk);}
+function futureIncome(mk=dashboardMonthKey){return futureTransactionsForMonth(mk).filter(t=>t.type==="income").reduce((a,b)=>a+Number(b.value),0);}
+function futureTxExpense(mk=dashboardMonthKey){return futureTransactionsForMonth(mk).filter(t=>t.type==="expense").reduce((a,b)=>a+Number(b.value),0);}
+function pendingBillsForMonth(mk=dashboardMonthKey){return data.bills.filter(b=>b.status!=="paid"&&monthKey(b.due)===mk&&b.due>=today());}
+function pendingBillsExpense(mk=dashboardMonthKey){return pendingBillsForMonth(mk).reduce((a,b)=>a+Number(b.value),0);}
+function futureExpense(mk=dashboardMonthKey){return futureTxExpense(mk)+pendingBillsExpense(mk);}
 function balance(){return realizedTransactions().reduce((a,t)=>a+(t.type==="income"?Number(t.value):-Number(t.value)),0);}
 function available(){return balance();}
-function projectedBalance(){return balance()+futureIncome()-futureExpense();}
+function monthEnd(mk){const [y,m]=mk.split("-").map(Number);return `${y}-${String(m).padStart(2,"0")}-${String(new Date(y,m,0).getDate()).padStart(2,"0")}`;}
+function futureTxUntil(mk){const end=monthEnd(mk);return futureTransactions().filter(t=>t.date<=end);}
+function pendingBillsUntil(mk){const end=monthEnd(mk);return data.bills.filter(b=>b.status!=="paid"&&b.due>=today()&&b.due<=end);}
+function projectedBalance(mk=dashboardMonthKey){
+  const tx=futureTxUntil(mk).reduce((a,t)=>a+(t.type==="income"?Number(t.value):-Number(t.value)),0);
+  const bills=pendingBillsUntil(mk).reduce((a,b)=>a+Number(b.value),0);
+  return balance()+tx-bills;
+}
 function investedTotal(){return data.investments.reduce((a,i)=>a+Number(i.invested||0),0);}
 function currentInvestmentTotal(){return data.investments.reduce((a,i)=>a+Number(i.current||0),0);}
 function investmentResult(){return currentInvestmentTotal()-investedTotal();}
@@ -59,14 +74,22 @@ function netWorth(){return balance()+currentInvestmentTotal();}
 function shownMoney(v){return data.settings.hideBalance?"••••••":money(v);}
 
 function renderHome(){
-  const inc=monthIncome(),exp=monthExpense(),net=inc-exp;
+  const mk=dashboardMonthKey,inc=monthIncome(mk),exp=monthExpense(mk),net=inc-exp;
+  if($("#dashboardMonth"))$("#dashboardMonth").value=mk;
+  if($("#dashboardMonthLabel"))$("#dashboardMonthLabel").textContent=fmtMonth(mk);
+  if($("#monthSummaryTitle"))$("#monthSummaryTitle").textContent=`Resumo realizado • ${fmtMonth(mk)}`;
+  if($("#budgetTitle"))$("#budgetTitle").textContent=`Orçamento • ${fmtMonth(mk)}`;
+  if($("#categoryTitle"))$("#categoryTitle").textContent=`Gastos por categoria • ${fmtMonth(mk)}`;
   $("#availableBalance").textContent=shownMoney(available());
   $("#monthIncome").textContent=shownMoney(inc);
   $("#monthExpense").textContent=shownMoney(exp);
-  $("#futureIncome").textContent=shownMoney(futureIncome());
-  $("#futureExpense").textContent=shownMoney(futureExpense());
-  $("#projectedBalance").textContent=shownMoney(projectedBalance());
-  $("#projectedBalance").className=projectedBalance()>=0?"income":"expense";
+  $("#futureIncome").textContent=shownMoney(futureIncome(mk));
+  $("#futureExpense").textContent=shownMoney(futureExpense(mk));
+  $("#projectedBalance").textContent=shownMoney(projectedBalance(mk));
+  $("#projectedBalance").className=projectedBalance(mk)>=0?"income":"expense";
+  $("#futureIncomeHint").textContent=`Previstas em ${fmtMonth(mk)}`;
+  $("#futureExpenseHint").textContent=`${money(futureTxExpense(mk))} agendado + ${money(pendingBillsExpense(mk))} em Contas`;
+  $("#projectedBalanceHint").textContent=`Saldo estimado até ${fmtDate(monthEnd(mk))}`;
   $("#homeInvestments").textContent=shownMoney(currentInvestmentTotal());
   $("#netWorth").textContent=shownMoney(netWorth());
   $("#summaryIncome").textContent=shownMoney(inc);
@@ -85,14 +108,24 @@ function renderHome(){
   const catRows=Object.entries(byCat).sort((a,b)=>b[1]-a[1]).slice(0,5),max=catRows[0]?.[1]||1;
   $("#categoryBreakdown").innerHTML=catRows.length?catRows.map(([cat,val])=>`<div class="category-row"><div class="category-name">${iconFor(cat)} ${esc(cat)}</div><div class="category-track"><div class="category-fill" style="width:${Math.max(4,val/max*100)}%"></div></div><div class="category-value">${money(val)}</div></div>`).join(""):`<div class="empty">Ainda não há despesas neste mês.</div>`;
 
-  const scheduled=[...futureTransactions()].sort((a,b)=>(a.date||"").localeCompare(b.date||"")).slice(0,4);
-  $("#scheduledTransactions").innerHTML=scheduled.length?scheduled.map(t=>itemHtml(iconFor(t.category),t.description,`Agendado • ${t.category} • ${fmtDate(t.date)}`,`${t.type==="income"?"+":"-"} ${money(t.value)}`,t.type,`<div class="tx-actions"><button class="text-btn edit-tx" type="button" data-id="${t.id}">Editar</button></div>`)).join(""):`<div class="empty">Nenhum lançamento futuro agendado.</div>`;
+  const scheduledTx=[...futureTransactionsForMonth(mk)].sort((a,b)=>(a.date||"").localeCompare(b.date||""));
+  const scheduledBills=[...pendingBillsForMonth(mk)].sort((a,b)=>(a.due||"").localeCompare(b.due||""));
+  const agenda=[
+    ...scheduledTx.map(t=>({kind:"tx",date:t.date,item:t})),
+    ...scheduledBills.map(b=>({kind:"bill",date:b.due,item:b}))
+  ].sort((a,b)=>a.date.localeCompare(b.date)).slice(0,6);
+  $("#scheduledTransactions").innerHTML=agenda.length?agenda.map(x=>x.kind==="tx"
+    ?itemHtml(iconFor(x.item.category),x.item.description,`Extrato agendado • ${x.item.category} • ${fmtDate(x.item.date)}`,`${x.item.type==="income"?"+":"-"} ${money(x.item.value)}`,x.item.type,`<div class="tx-actions"><button class="text-btn edit-tx" type="button" data-id="${x.item.id}">Editar</button></div>`)
+    :itemHtml("▣",x.item.description,`Conta pendente • ${x.item.category||"Outros"} • ${fmtDate(x.item.due)}`,`- ${money(x.item.value)}`,"expense",`<div class="tx-actions"><button class="text-btn edit-bill" type="button" data-id="${x.item.id}">Editar</button></div>`)
+  ).join(""):`<div class="empty">Nenhum compromisso futuro em ${fmtMonth(mk)}.</div>`;
 
   const bills=[...data.bills].filter(b=>b.status==="pending").sort((a,b)=>a.due.localeCompare(b.due)).slice(0,3);
   $("#upcomingBills").innerHTML=bills.length?bills.map(b=>itemHtml("▣",b.description,`Vence em ${fmtDate(b.due)} • não descontado`,money(b.value),"expense")).join(""):`<div class="empty">Nenhuma conta pendente.</div>`;
 
   const tx=[...realizedTransactions()].sort(sortNewest).slice(0,4);
   $("#recentTransactions").innerHTML=tx.length?tx.map(t=>itemHtml(iconFor(t.category),t.description,`Realizado • ${t.category} • ${fmtDate(t.date)}`,`${t.type==="income"?"+":"-"} ${money(t.value)}`,t.type,`<div class="tx-actions"><button class="text-btn edit-tx" type="button" data-id="${t.id}">Editar</button></div>`)).join(""):`<div class="empty">Adicione sua primeira movimentação realizada.</div>`;
+  bindTxActions();
+  $$("#homeScreen .edit-bill").forEach(btn=>btn.onclick=()=>openBill(data.bills.find(x=>x.id===btn.dataset.id)));
 }
 
 function itemHtml(icon,title,sub,amount,type,actions=""){
@@ -306,6 +339,15 @@ $("#investmentForm").addEventListener("submit",e=>{e.preventDefault();if(!e.curr
 $$(".chip").forEach(c=>c.onclick=()=>{$$(".chip").forEach(x=>x.classList.remove("active"));c.classList.add("active");txFilter=c.dataset.filter;renderTransactions();});
 ["statementSearch","statementMonth","statementCategory","statementStatus","statementSort","statementView"].forEach(id=>$("#"+id).addEventListener(id==="statementSearch"?"input":"change",renderTransactions));
 $("#clearStatementFilters").onclick=()=>{$("#statementSearch").value="";$("#statementMonth").value="";$("#statementCategory").value="all";$("#statementStatus").value="all";$("#statementSort").value="newest";$("#statementView").value="grouped";txFilter="all";$$(".chip").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));renderTransactions();};
+
+
+function setDashboardMonth(mk){
+  if(!/^\d{4}-\d{2}$/.test(mk||""))return;
+  dashboardMonthKey=mk;renderHome();
+}
+$("#dashboardMonth").addEventListener("change",e=>setDashboardMonth(e.target.value));
+$("#prevDashboardMonth").onclick=()=>setDashboardMonth(shiftMonth(dashboardMonthKey,-1));
+$("#nextDashboardMonth").onclick=()=>setDashboardMonth(shiftMonth(dashboardMonthKey,1));
 
 $("#saveSettings").onclick=()=>{data.settings.budget=Number($("#budgetInput").value||0);data.settings.userName=$("#userNameInput").value.trim();save();alert("Configurações salvas.");};
 $("#themeBtn").onclick=()=>{data.settings.theme=data.settings.theme==="dark"?"light":"dark";save();};
