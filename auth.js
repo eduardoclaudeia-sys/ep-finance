@@ -57,6 +57,14 @@
   sb = window.supabase.createClient(cfg.SUPABASE_URL, publicKey);
   window.epSupabase = sb;
 
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      if (window.ensureEpPushRegistration) {
+        window.ensureEpPushRegistration();
+      }
+    }, 1500);
+  });
+
   function getLocalRaw() {
     let raw = localStorage.getItem(LOCAL_KEY);
     if (raw) return raw;
@@ -194,6 +202,12 @@
     }
 
     gate?.classList.add('hidden');
+
+    setTimeout(() => {
+      if (window.ensureEpPushRegistration) {
+        window.ensureEpPushRegistration();
+      }
+    }, 700);
 
     const accountEmail = document.getElementById('accountEmail');
     if (accountEmail) accountEmail.textContent = user.email || '';

@@ -421,8 +421,8 @@ function updateNotificationUI(){
       :"Autorizadas. No iPhone, use o app instalado na Tela de Início para Web Push.";
     badge.textContent="Ativas";
     badge.className="status-badge on";
-    enable.textContent="Notificações ativadas";
-    enable.disabled=true;
+    enable.textContent="Sincronizar este dispositivo";
+    enable.disabled=false;
     test.disabled=false;
   }else if(permission==="denied"){
     support.textContent="A permissão foi bloqueada. Libere notificações nas configurações do navegador/aparelho.";
@@ -450,18 +450,56 @@ function urlBase64ToUint8Array(base64String){
   return Uint8Array.from([...rawData].map(char=>char.charCodeAt(0)));
 }
 
+async function persistPushSubscription(subscription){
+  if(!subscription)return false;
+  if(!window.epSupabase){
+    console.warn("EP Finance: Supabase ainda não disponível para salvar a subscription.");
+    return false;
+  }
+
+  const {data:{user},error:userError}=await window.epSupabase.auth.getUser();
+  if(userError||!user){
+    console.warn("EP Finance: usuário ainda não autenticado para salvar a subscription.");
+    return false;
+  }
+
+  const j=subscription.toJSON();
+  const payload={
+    user_id:user.id,
+    endpoint:j.endpoint,
+    p256dh:j.keys?.p256dh||"",
+    auth:j.keys?.auth||"",
+    user_agent:navigator.userAgent,
+    updated_at:new Date().toISOString()
+  };
+
+  const {error}=await window.epSupabase
+    .from("push_subscriptions")
+    .upsert(payload,{onConflict:"endpoint"});
+
+  if(error){
+    console.error("EP Finance: erro ao salvar push subscription:",error);
+    return false;
+  }
+
+  console.info("EP Finance: dispositivo registrado em push_subscriptions.");
+  return true;
+}
+
 async function subscribeForPush(){
+  if(!notificationSupported())return null;
   if(Notification.permission!=="granted")return null;
+
   const registration=await navigator.serviceWorker.ready;
   const vapid=window.EP_CONFIG?.VAPID_PUBLIC_KEY;
 
-  // Enquanto a VAPID não estiver configurada, notificações locais/teste continuam funcionando.
   if(!vapid){
     console.warn("EP Finance: VAPID_PUBLIC_KEY ainda não configurada.");
     return null;
   }
 
   let subscription=await registration.pushManager.getSubscription();
+
   if(!subscription){
     subscription=await registration.pushManager.subscribe({
       userVisibleOnly:true,
@@ -469,40 +507,50 @@ async function subscribeForPush(){
     });
   }
 
-  if(window.epSupabase){
-    const {data:{user}}=await window.epSupabase.auth.getUser();
-    if(user){
-      const j=subscription.toJSON();
-      const {error}=await window.epSupabase.from("push_subscriptions").upsert({
-        user_id:user.id,
-        endpoint:j.endpoint,
-        p256dh:j.keys?.p256dh||"",
-        auth:j.keys?.auth||"",
-        user_agent:navigator.userAgent,
-        updated_at:new Date().toISOString()
-      },{onConflict:"endpoint"});
-      if(error)console.error("Erro ao salvar push subscription:",error);
-    }
-  }
+  await persistPushSubscription(subscription);
   return subscription;
+}
+
+async function ensurePushRegistration(){
+  if(!notificationSupported())return false;
+  if(Notification.permission!=="granted")return false;
+
+  try{
+    const subscription=await subscribeForPush();
+    return Boolean(subscription);
+  }catch(err){
+    console.error("EP Finance: falha ao garantir registro push:",err);
+    return false;
+  }
 }
 
 async function enableNotifications(){
   if(!notificationSupported())return;
   try{
-    const permission=await Notification.requestPermission();
+    let permission=Notification.permission;
+
+    if(permission==="default"){
+      permission=await Notification.requestPermission();
+    }
+
     updateNotificationUI();
+
     if(permission==="granted"){
-      await subscribeForPush();
-      await sendLocalNotification(
-        "EP Finance",
-        "Notificações ativadas com sucesso 🔔",
-        {tag:"ep-finance-enabled",url:"./"}
-      );
+      const registered=await ensurePushRegistration();
+
+      if(registered){
+        await sendLocalNotification(
+          "EP Finance",
+          "Dispositivo sincronizado com o Web Push ✅",
+          {tag:"ep-finance-enabled",url:"./"}
+        );
+      }else{
+        alert("A permissão está ativa, mas o dispositivo ainda não pôde ser salvo no Supabase.");
+      }
     }
   }catch(err){
     console.error(err);
-    alert("Não foi possível ativar as notificações neste aparelho.");
+    alert("Não foi possível ativar ou sincronizar as notificações neste aparelho.");
   }
 }
 
@@ -565,11 +613,21 @@ function initNotifications(){
   if(test)test.onclick=testNotification;
   if(saveBtn)saveBtn.onclick=saveNotificationPreferences;
 
+  if(notificationSupported()&&Notification.permission==="granted"){
+    setTimeout(()=>ensurePushRegistration(),1200);
+  }
+
   document.addEventListener("visibilitychange",()=>{
-    if(document.visibilityState==="visible")updateNotificationUI();
+    if(document.visibilityState==="visible"){
+      updateNotificationUI();
+      if(Notification.permission==="granted"){
+        ensurePushRegistration();
+      }
+    }
   });
 }
 
 
+window.ensureEpPushRegistration=ensurePushRegistration;
 renderAll();
 initNotifications();

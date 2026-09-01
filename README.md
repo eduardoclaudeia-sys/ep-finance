@@ -117,3 +117,13 @@ Correções e melhorias:
 ### Importante
 Notificações de teste funcionam após a permissão do navegador.
 Notificações automáticas com o app fechado exigem configurar VAPID e publicar a Edge Function.
+
+
+## V1.6.1 — Correção do registro Web Push
+- Corrigido o caso em que o iPhone já tinha permissão, mas não aparecia em push_subscriptions.
+- Registro automático ao abrir o app.
+- Nova tentativa ao voltar para o app.
+- Nova tentativa após autenticação.
+- Botão para sincronizar manualmente o dispositivo.
+- Subscription existente é reutilizada e salva no Supabase.
+- Cache atualizado para v1.6.1.
