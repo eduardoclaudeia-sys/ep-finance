@@ -67,3 +67,29 @@ PWA de controle financeiro pessoal.
 - Migração automática do armazenamento legado epFinanceV1.
 - Cache do PWA atualizado para buscar JS/HTML novos primeiro.
 - Query string v=1.3.2 nos arquivos principais para reduzir cache antigo no Render/iPhone.
+
+
+## V1.4 — Saldo por data
+
+Correções e melhorias:
+- Saldo atual considera somente receitas/despesas com data até hoje.
+- Movimentações futuras ficam como "Agendadas" e não afetam o saldo atual.
+- Receitas futuras, despesas futuras e saldo projetado aparecem separadamente no painel.
+- Patrimônio atual usa saldo realizado + valor atual dos investimentos.
+- Resumo mensal e orçamento usam apenas movimentações já realizadas.
+- Extrato ganhou filtro por status: Realizados / Agendados.
+- Agenda financeira mostra os próximos lançamentos futuros.
+- Contas não descontam o saldo automaticamente.
+- Botão "Pagar hoje" registra a despesa na data atual e marca a conta como paga.
+- Reabrir conta desfaz a movimentação criada automaticamente por "Pagar hoje".
+- Data de hoje agora usa o fuso local do aparelho, evitando erro de virada de dia causado por UTC.
+
+
+## V1.4.1 — Edição completa
+- Editar qualquer receita ou despesa pelo extrato.
+- Editar lançamentos futuros/agendados.
+- Atalho Editar também no painel inicial e na agenda financeira.
+- Editar contas: descrição, valor, vencimento, categoria e status.
+- Alterações em conta paga sincronizam com a movimentação criada pelo pagamento.
+- Ao mudar uma conta paga para pendente, a movimentação automática vinculada é removida.
+- Movimentações vinculadas a contas preservam o vínculo ao serem editadas.

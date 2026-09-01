@@ -41,31 +41,37 @@
       <section class="screen active" id="homeScreen">
         <div class="balance-card">
           <div class="balance-top">
-            <span>Dinheiro disponível</span>
+            <span>Saldo na conta hoje</span>
             <button id="toggleBalance" class="ghost-btn" type="button" aria-label="Ocultar saldo">👁</button>
           </div>
           <strong id="availableBalance">R$ 0,00</strong>
-          <small>Saldo em caixa − contas pendentes</small>
+          <small>Somente lançamentos com data até hoje</small>
           <div class="mini-grid">
-            <div><span>Receitas do mês</span><b id="monthIncome">R$ 0,00</b></div>
-            <div><span>Despesas do mês</span><b id="monthExpense">R$ 0,00</b></div>
+            <div><span>Entradas realizadas no mês</span><b id="monthIncome">R$ 0,00</b></div>
+            <div><span>Saídas realizadas no mês</span><b id="monthExpense">R$ 0,00</b></div>
           </div>
         </div>
 
         <div class="dashboard-grid">
           <button class="metric-card" type="button" data-go="transactionsScreen">
-            <span>Saldo em caixa</span><strong id="cashBalance">R$ 0,00</strong><small>Movimentações acumuladas</small>
+            <span>Receitas futuras</span><strong id="futureIncome">R$ 0,00</strong><small>Lançamentos após hoje</small>
+          </button>
+          <button class="metric-card" type="button" data-go="transactionsScreen">
+            <span>Despesas futuras</span><strong id="futureExpense">R$ 0,00</strong><small>Ainda não descontadas</small>
+          </button>
+          <button class="metric-card wide projection-card" type="button" data-go="transactionsScreen">
+            <span>Saldo projetado</span><strong id="projectedBalance">R$ 0,00</strong><small>Saldo de hoje + todos os lançamentos futuros</small>
           </button>
           <button class="metric-card" type="button" data-go="investmentsScreen">
             <span>Investimentos</span><strong id="homeInvestments">R$ 0,00</strong><small>Valor atual da carteira</small>
           </button>
-          <button class="metric-card wide" type="button" data-go="investmentsScreen">
-            <span>Patrimônio total</span><strong id="netWorth">R$ 0,00</strong><small>Caixa + investimentos</small>
+          <button class="metric-card" type="button" data-go="investmentsScreen">
+            <span>Patrimônio atual</span><strong id="netWorth">R$ 0,00</strong><small>Saldo de hoje + investimentos</small>
           </button>
         </div>
 
         <section class="section-block">
-          <div class="section-head"><h2>Resumo do mês</h2><span id="monthResult">R$ 0,00</span></div>
+          <div class="section-head"><h2>Resumo realizado do mês</h2><span id="monthResult">R$ 0,00</span></div>
           <div class="monthly-split">
             <div><span>Entrou</span><b id="summaryIncome">R$ 0,00</b></div>
             <div><span>Saiu</span><b id="summaryExpense">R$ 0,00</b></div>
@@ -82,6 +88,12 @@
         <section class="section-block">
           <div class="section-head"><h2>Gastos por categoria</h2><button class="text-btn" type="button" data-go="transactionsScreen">Abrir extrato</button></div>
           <div id="categoryBreakdown" class="category-breakdown"></div>
+        </section>
+
+        <section class="section-block">
+          <div class="section-head"><h2>Agenda financeira</h2><button class="text-btn" type="button" data-go="transactionsScreen">Ver extrato</button></div>
+          <p>Receitas e despesas futuras ficam agendadas e só entram no saldo na data indicada.</p>
+          <div id="scheduledTransactions" class="list"></div>
         </section>
 
         <section class="section-block">
@@ -117,6 +129,7 @@
           <div class="filter-grid">
             <label>Mês<input id="statementMonth" type="month"></label>
             <label>Categoria<select id="statementCategory"><option value="all">Todas</option></select></label>
+            <label>Status<select id="statementStatus"><option value="all">Todos</option><option value="realized">Realizados</option><option value="future">Agendados</option></select></label>
             <label>Ordenar<select id="statementSort"><option value="newest">Mais recentes</option><option value="oldest">Mais antigas</option><option value="highest">Maior valor</option><option value="lowest">Menor valor</option></select></label>
             <label>Visual<select id="statementView"><option value="grouped">Agrupado por dia</option><option value="flat">Lista simples</option></select></label>
           </div>
@@ -127,6 +140,7 @@
 
       <section class="screen" id="billsScreen">
         <div class="page-title"><div><span class="eyebrow">CONTAS</span><h2>Vencimentos</h2></div><button id="openBillModal" class="primary small" type="button">+ Conta</button></div>
+        <div class="info-card"><strong>Contas não mexem no saldo sozinhas.</strong><span>Use “Pagar hoje” para registrar a saída na data do pagamento e evitar desconto duplicado.</span></div>
         <div id="billList" class="list spaced"></div>
       </section>
 
@@ -198,10 +212,12 @@
 
   <dialog id="billModal">
     <form id="billForm">
-      <div class="modal-head"><h3>Nova conta</h3><button type="button" class="icon-btn close-modal" data-close="billModal">✕</button></div>
+      <input id="billEditId" type="hidden">
+      <div class="modal-head"><h3 id="billModalTitle">Nova conta</h3><button type="button" class="icon-btn close-modal" data-close="billModal">✕</button></div>
       <label>Descrição<input id="billDescription" required placeholder="Ex.: Aluguel"></label>
       <label>Valor<input id="billValue" type="number" min="0.01" step="0.01" required></label>
       <label>Vencimento<input id="billDue" type="date" required></label>
+      <label>Categoria<select id="billCategory"><option>Moradia</option><option>Alimentação</option><option>Transporte</option><option>Saúde</option><option>Educação</option><option>Lazer</option><option>Outros</option></select></label>
       <label>Status<select id="billStatus"><option value="pending">Pendente</option><option value="paid">Pago</option></select></label>
       <div class="modal-actions"><button type="button" class="secondary close-modal" data-close="billModal">Cancelar</button><button class="primary" type="submit">Salvar conta</button></div>
     </form>

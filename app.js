@@ -18,7 +18,13 @@ function load(){
 function normalize(d){d.transactions=d.transactions||[];d.bills=d.bills||[];d.goals=d.goals||[];d.investments=d.investments||[];d.settings={...defaultData.settings,...(d.settings||{})};return d;}
 function save(){localStorage.setItem(KEY,JSON.stringify(data));renderAll();}
 function money(v){return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});}
-function today(){return new Date().toISOString().slice(0,10);}
+function today(){
+  const d=new Date();
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,"0");
+  const day=String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
 function monthKey(d){return (d||today()).slice(0,7);}
 function fmtDate(d){if(!d)return"";return new Date(d+"T12:00:00").toLocaleDateString("pt-BR");}
 function id(){return crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random();}
@@ -32,12 +38,19 @@ function renderAll(){
   renderHome();renderTransactions();renderBills();renderGoals();renderInvestments();
 }
 
-function currentMonthTx(){const mk=monthKey();return data.transactions.filter(t=>monthKey(t.date)===mk);}
+function isFutureTx(t){return Boolean(t?.date)&&t.date>today();}
+function isRealizedTx(t){return !isFutureTx(t);}
+function realizedTransactions(){return data.transactions.filter(isRealizedTx);}
+function futureTransactions(){return data.transactions.filter(isFutureTx);}
+function currentMonthTx(){const mk=monthKey();return realizedTransactions().filter(t=>monthKey(t.date)===mk);}
+function allCurrentMonthTx(){const mk=monthKey();return data.transactions.filter(t=>monthKey(t.date)===mk);}
 function monthIncome(){return currentMonthTx().filter(t=>t.type==="income").reduce((a,b)=>a+Number(b.value),0);}
 function monthExpense(){return currentMonthTx().filter(t=>t.type==="expense").reduce((a,b)=>a+Number(b.value),0);}
-function pendingBills(){return data.bills.filter(b=>b.status==="pending").reduce((a,b)=>a+Number(b.value),0);}
-function balance(){return data.transactions.reduce((a,t)=>a+(t.type==="income"?Number(t.value):-Number(t.value)),0);}
-function available(){return balance()-pendingBills();}
+function futureIncome(){return futureTransactions().filter(t=>t.type==="income").reduce((a,b)=>a+Number(b.value),0);}
+function futureExpense(){return futureTransactions().filter(t=>t.type==="expense").reduce((a,b)=>a+Number(b.value),0);}
+function balance(){return realizedTransactions().reduce((a,t)=>a+(t.type==="income"?Number(t.value):-Number(t.value)),0);}
+function available(){return balance();}
+function projectedBalance(){return balance()+futureIncome()-futureExpense();}
 function investedTotal(){return data.investments.reduce((a,i)=>a+Number(i.invested||0),0);}
 function currentInvestmentTotal(){return data.investments.reduce((a,i)=>a+Number(i.current||0),0);}
 function investmentResult(){return currentInvestmentTotal()-investedTotal();}
@@ -50,7 +63,10 @@ function renderHome(){
   $("#availableBalance").textContent=shownMoney(available());
   $("#monthIncome").textContent=shownMoney(inc);
   $("#monthExpense").textContent=shownMoney(exp);
-  $("#cashBalance").textContent=shownMoney(balance());
+  $("#futureIncome").textContent=shownMoney(futureIncome());
+  $("#futureExpense").textContent=shownMoney(futureExpense());
+  $("#projectedBalance").textContent=shownMoney(projectedBalance());
+  $("#projectedBalance").className=projectedBalance()>=0?"income":"expense";
   $("#homeInvestments").textContent=shownMoney(currentInvestmentTotal());
   $("#netWorth").textContent=shownMoney(netWorth());
   $("#summaryIncome").textContent=shownMoney(inc);
@@ -69,10 +85,14 @@ function renderHome(){
   const catRows=Object.entries(byCat).sort((a,b)=>b[1]-a[1]).slice(0,5),max=catRows[0]?.[1]||1;
   $("#categoryBreakdown").innerHTML=catRows.length?catRows.map(([cat,val])=>`<div class="category-row"><div class="category-name">${iconFor(cat)} ${esc(cat)}</div><div class="category-track"><div class="category-fill" style="width:${Math.max(4,val/max*100)}%"></div></div><div class="category-value">${money(val)}</div></div>`).join(""):`<div class="empty">Ainda não há despesas neste mês.</div>`;
 
+  const scheduled=[...futureTransactions()].sort((a,b)=>(a.date||"").localeCompare(b.date||"")).slice(0,4);
+  $("#scheduledTransactions").innerHTML=scheduled.length?scheduled.map(t=>itemHtml(iconFor(t.category),t.description,`Agendado • ${t.category} • ${fmtDate(t.date)}`,`${t.type==="income"?"+":"-"} ${money(t.value)}`,t.type,`<div class="tx-actions"><button class="text-btn edit-tx" type="button" data-id="${t.id}">Editar</button></div>`)).join(""):`<div class="empty">Nenhum lançamento futuro agendado.</div>`;
+
   const bills=[...data.bills].filter(b=>b.status==="pending").sort((a,b)=>a.due.localeCompare(b.due)).slice(0,3);
-  $("#upcomingBills").innerHTML=bills.length?bills.map(b=>itemHtml("▣",b.description,`Vence em ${fmtDate(b.due)}`,money(b.value),"expense")).join(""):`<div class="empty">Nenhuma conta pendente.</div>`;
-  const tx=[...data.transactions].sort(sortNewest).slice(0,4);
-  $("#recentTransactions").innerHTML=tx.length?tx.map(t=>itemHtml(iconFor(t.category),t.description,`${t.category} • ${fmtDate(t.date)}`,`${t.type==="income"?"+":"-"} ${money(t.value)}`,t.type)).join(""):`<div class="empty">Adicione sua primeira movimentação.</div>`;
+  $("#upcomingBills").innerHTML=bills.length?bills.map(b=>itemHtml("▣",b.description,`Vence em ${fmtDate(b.due)} • não descontado`,money(b.value),"expense")).join(""):`<div class="empty">Nenhuma conta pendente.</div>`;
+
+  const tx=[...realizedTransactions()].sort(sortNewest).slice(0,4);
+  $("#recentTransactions").innerHTML=tx.length?tx.map(t=>itemHtml(iconFor(t.category),t.description,`Realizado • ${t.category} • ${fmtDate(t.date)}`,`${t.type==="income"?"+":"-"} ${money(t.value)}`,t.type,`<div class="tx-actions"><button class="text-btn edit-tx" type="button" data-id="${t.id}">Editar</button></div>`)).join(""):`<div class="empty">Adicione sua primeira movimentação realizada.</div>`;
 }
 
 function itemHtml(icon,title,sub,amount,type,actions=""){
@@ -89,11 +109,14 @@ function getFilteredTransactions(){
   const q=$("#statementSearch")?.value.trim().toLowerCase()||"";
   const mk=$("#statementMonth")?.value||"";
   const cat=$("#statementCategory")?.value||"all";
+  const status=$("#statementStatus")?.value||"all";
   const sort=$("#statementSort")?.value||"newest";
   let tx=[...data.transactions];
   if(txFilter!=="all")tx=tx.filter(t=>t.type===txFilter);
   if(mk)tx=tx.filter(t=>monthKey(t.date)===mk);
   if(cat!=="all")tx=tx.filter(t=>t.category===cat);
+  if(status==="realized")tx=tx.filter(isRealizedTx);
+  if(status==="future")tx=tx.filter(isFutureTx);
   if(q)tx=tx.filter(t=>`${t.description} ${t.category} ${t.payment||""} ${t.note||""}`.toLowerCase().includes(q));
   if(sort==="newest")tx.sort(sortNewest);
   if(sort==="oldest")tx.sort((a,b)=>sortNewest(b,a));
@@ -102,7 +125,8 @@ function getFilteredTransactions(){
   return tx;
 }
 function txRow(t){
-  const details=[t.category,t.payment,fmtDate(t.date),t.note].filter(Boolean).join(" • ");
+  const state=isFutureTx(t)?"Agendado":"Realizado";
+  const details=[state,t.category,t.payment,fmtDate(t.date),t.note].filter(Boolean).join(" • ");
   return itemHtml(iconFor(t.category),t.description,details,`${t.type==="income"?"+":"-"} ${money(t.value)}`,t.type,`<div class="tx-actions"><button class="text-btn edit-tx" type="button" data-id="${t.id}">Editar</button><button class="text-btn delete-tx" type="button" data-id="${t.id}">Excluir</button></div>`);
 }
 function renderTransactions(){
@@ -116,7 +140,7 @@ function renderTransactions(){
   if(!tx.length){$("#transactionList").innerHTML=`<div class="empty">Nenhuma movimentação encontrada com esses filtros.</div>`;bindTxActions();return;}
   if(grouped){
     const groups={};tx.forEach(t=>(groups[t.date]??=[]).push(t));
-    $("#transactionList").innerHTML=Object.entries(groups).map(([date,items])=>{const dayNet=items.reduce((a,t)=>a+(t.type==="income"?Number(t.value):-Number(t.value)),0);return `<section class="statement-day"><div class="statement-day-head"><span>${fmtDate(date)}</span><span class="${dayNet>=0?"income":"expense"}">${dayNet>=0?"+ ":"- "}${money(Math.abs(dayNet))}</span></div>${items.map(txRow).join("")}</section>`}).join("");
+    $("#transactionList").innerHTML=Object.entries(groups).map(([date,items])=>{const dayNet=items.reduce((a,t)=>a+(t.type==="income"?Number(t.value):-Number(t.value)),0),scheduled=date>today();return `<section class="statement-day ${scheduled?"scheduled-day":""}"><div class="statement-day-head"><span>${fmtDate(date)}${scheduled?" • AGENDADO":""}</span><span class="${dayNet>=0?"income":"expense"}">${dayNet>=0?"+ ":"- "}${money(Math.abs(dayNet))}</span></div>${items.map(txRow).join("")}</section>`}).join("");
   } else $("#transactionList").innerHTML=tx.map(txRow).join("");
   bindTxActions();
 }
@@ -126,10 +150,40 @@ function bindTxActions(){
 }
 
 function renderBills(){
-  const bills=[...data.bills].sort((a,b)=>a.due.localeCompare(b.due));
-  $("#billList").innerHTML=bills.length?bills.map(b=>{const status=b.status==="paid"?"Pago":"Pendente";const actions=`<div class="tx-actions"><button class="text-btn toggle-bill" type="button" data-id="${b.id}">${b.status==="paid"?"Marcar pendente":"Marcar pago"}</button><button class="text-btn delete-bill" type="button" data-id="${b.id}">Excluir</button></div>`;return itemHtml("▣",b.description,`${status} • ${fmtDate(b.due)}`,money(b.value),b.status==="paid"?"income":"expense",actions)}).join(""):`<div class="empty">Nenhuma conta cadastrada.</div>`;
-  $$(".toggle-bill").forEach(btn=>btn.onclick=()=>{const b=data.bills.find(x=>x.id===btn.dataset.id);b.status=b.status==="paid"?"pending":"paid";save();});
-  $$(".delete-bill").forEach(btn=>btn.onclick=()=>{if(confirm("Excluir esta conta?")){data.bills=data.bills.filter(x=>x.id!==btn.dataset.id);save();}});
+  const bills=[...data.bills].sort((a,b)=>(a.due||"").localeCompare(b.due||""));
+  $("#billList").innerHTML=bills.length?bills.map(b=>{
+    const paid=b.status==="paid";
+    const actions=`<div class="tx-actions"><button class="text-btn edit-bill" type="button" data-id="${b.id}">Editar</button><button class="text-btn ${paid?"reopen-bill":"pay-bill"}" type="button" data-id="${b.id}">${paid?"Reabrir":"Pagar hoje"}</button><button class="text-btn delete-bill" type="button" data-id="${b.id}">Excluir</button></div>`;
+    return itemHtml("▣",b.description,`${paid?"Pago":"Pendente"} • ${b.category||"Outros"} • vence ${fmtDate(b.due)}`,money(b.value),paid?"income":"expense",actions)
+  }).join(""):`<div class="empty">Nenhuma conta cadastrada.</div>`;
+
+  $$(".edit-bill").forEach(btn=>btn.onclick=()=>openBill(data.bills.find(x=>x.id===btn.dataset.id)));
+
+  $$(".pay-bill").forEach(btn=>btn.onclick=()=>{
+    const b=data.bills.find(x=>x.id===btn.dataset.id);if(!b)return;
+    const linked=data.transactions.find(t=>t.sourceBillId===b.id);
+    if(linked){b.status="paid";save();return;}
+    data.transactions.push({
+      id:id(),type:"expense",description:b.description,value:Number(b.value),
+      category:b.category||"Outros",date:today(),payment:"Pix",
+      note:`Pagamento da conta com vencimento em ${fmtDate(b.due)}`,sourceBillId:b.id
+    });
+    b.status="paid";save();
+  });
+
+  $$(".reopen-bill").forEach(btn=>btn.onclick=()=>{
+    const b=data.bills.find(x=>x.id===btn.dataset.id);if(!b)return;
+    if(confirm("Reabrir a conta e remover a movimentação criada por este pagamento?")){
+      data.transactions=data.transactions.filter(t=>t.sourceBillId!==b.id);
+      b.status="pending";save();
+    }
+  });
+
+  $$(".delete-bill").forEach(btn=>btn.onclick=()=>{
+    if(confirm("Excluir esta conta? A movimentação de pagamento, se existir, será mantida.")){
+      data.bills=data.bills.filter(x=>x.id!==btn.dataset.id);save();
+    }
+  });
 }
 function renderGoals(){
   $("#goalList").innerHTML=data.goals.length?data.goals.map(g=>{const pct=Math.min(100,Math.round(Number(g.saved||0)/Number(g.target||1)*100));return `<div class="goal-card"><div class="goal-head"><div><div class="item-title">${esc(g.name)}</div><div class="item-sub">${pct}% concluído</div></div><div class="goal-value">${money(g.saved)} / ${money(g.target)}</div></div><div class="progress goal-progress"><div style="width:${pct}%"></div></div><div class="tx-actions"><button class="secondary compact add-goal" type="button" data-id="${g.id}">Adicionar valor</button><button class="text-btn delete-goal" type="button" data-id="${g.id}">Excluir</button></div></div>`}).join(""):`<div class="empty">Crie uma meta para acompanhar seus objetivos.</div>`;
@@ -158,7 +212,7 @@ $$("[data-go]").forEach(n=>n.onclick=()=>go(n.dataset.go));
 function safeOpen(dialog){if(dialog&&!dialog.open){try{dialog.showModal();}catch{dialog.setAttribute("open","");}}}
 function safeClose(dialog){if(!dialog)return;try{if(dialog.open)dialog.close();else dialog.removeAttribute("open");}catch{dialog.removeAttribute("open");}}
 function setupModal(openSel,modalSel,dateSel){const opener=$(openSel),modal=$(modalSel);if(!opener||!modal)return;opener.onclick=()=>{if(dateSel)$(dateSel).value=today();safeOpen(modal);};}
-setupModal("#openBillModal","#billModal","#billDue");setupModal("#openGoalModal","#goalModal");setupModal("#openInvestmentModal","#investmentModal","#investmentDate");
+$("#openBillModal").onclick=()=>openBill();setupModal("#openGoalModal","#goalModal");setupModal("#openInvestmentModal","#investmentModal","#investmentDate");
 $("#openTransactionModal").onclick=()=>openTransaction();$("#fab").onclick=()=>openTransaction();
 $$(".close-modal").forEach(btn=>btn.onclick=()=>safeClose($("#"+btn.dataset.close)));
 $$('dialog').forEach(d=>{
@@ -171,14 +225,87 @@ function openTransaction(t=null){
   $("#txType").value=t?.type||"expense";$("#txDescription").value=t?.description||"";$("#txValue").value=t?.value||"";$("#txCategory").value=t?.category||"Alimentação";$("#txDate").value=t?.date||today();$("#txPayment").value=t?.payment||"Pix";$("#txNote").value=t?.note||"";safeOpen($("#transactionModal"));
 }
 
-$("#transactionForm").addEventListener("submit",e=>{e.preventDefault();if(!e.currentTarget.reportValidity())return;const editId=$("#txEditId").value;const obj={id:editId||id(),type:$("#txType").value,description:$("#txDescription").value.trim(),value:Number($("#txValue").value),category:$("#txCategory").value,date:$("#txDate").value,payment:$("#txPayment").value,note:$("#txNote").value.trim()};if(editId){const ix=data.transactions.findIndex(t=>t.id===editId);if(ix>=0)data.transactions[ix]=obj;}else data.transactions.push(obj);safeClose($("#transactionModal"));save();});
-$("#billForm").addEventListener("submit",e=>{e.preventDefault();if(!e.currentTarget.reportValidity())return;data.bills.push({id:id(),description:$("#billDescription").value.trim(),value:Number($("#billValue").value),due:$("#billDue").value,status:$("#billStatus").value});e.currentTarget.reset();safeClose($("#billModal"));save();});
+function openBill(b=null){
+  $("#billForm").reset();
+  $("#billEditId").value=b?.id||"";
+  $("#billModalTitle").textContent=b?"Editar conta":"Nova conta";
+  $("#billDescription").value=b?.description||"";
+  $("#billValue").value=b?.value||"";
+  $("#billDue").value=b?.due||today();
+  $("#billCategory").value=b?.category||"Outros";
+  $("#billStatus").value=b?.status||"pending";
+  safeOpen($("#billModal"));
+}
+
+$("#transactionForm").addEventListener("submit",e=>{
+  e.preventDefault();if(!e.currentTarget.reportValidity())return;
+  const editId=$("#txEditId").value;
+  const previous=editId?data.transactions.find(t=>t.id===editId):null;
+  const obj={
+    id:editId||id(),
+    type:$("#txType").value,
+    description:$("#txDescription").value.trim(),
+    value:Number($("#txValue").value),
+    category:$("#txCategory").value,
+    date:$("#txDate").value,
+    payment:$("#txPayment").value,
+    note:$("#txNote").value.trim(),
+    ...(previous?.sourceBillId?{sourceBillId:previous.sourceBillId}:{})
+  };
+  if(editId){
+    const ix=data.transactions.findIndex(t=>t.id===editId);
+    if(ix>=0)data.transactions[ix]=obj;
+  }else data.transactions.push(obj);
+  safeClose($("#transactionModal"));save();
+});
+$("#billForm").addEventListener("submit",e=>{
+  e.preventDefault();if(!e.currentTarget.reportValidity())return;
+  const editId=$("#billEditId").value;
+  const bill={
+    id:editId||id(),
+    description:$("#billDescription").value.trim(),
+    value:Number($("#billValue").value),
+    due:$("#billDue").value,
+    category:$("#billCategory").value,
+    status:$("#billStatus").value
+  };
+
+  if(editId){
+    const ix=data.bills.findIndex(b=>b.id===editId);
+    if(ix>=0)data.bills[ix]=bill;
+  }else data.bills.push(bill);
+
+  let linked=data.transactions.find(t=>t.sourceBillId===bill.id);
+
+  if(bill.status==="paid"&&!linked){
+    data.transactions.push({
+      id:id(),type:"expense",description:bill.description,value:Number(bill.value),
+      category:bill.category||"Outros",date:today(),payment:"Pix",
+      note:`Pagamento da conta com vencimento em ${fmtDate(bill.due)}`,sourceBillId:bill.id
+    });
+    linked=data.transactions.find(t=>t.sourceBillId===bill.id);
+  }
+
+  if(bill.status==="pending"&&linked){
+    data.transactions=data.transactions.filter(t=>t.sourceBillId!==bill.id);
+    linked=null;
+  }
+
+  if(bill.status==="paid"&&linked){
+    linked.description=bill.description;
+    linked.value=Number(bill.value);
+    linked.category=bill.category||"Outros";
+    linked.note=`Pagamento da conta com vencimento em ${fmtDate(bill.due)}`;
+  }
+
+  e.currentTarget.reset();safeClose($("#billModal"));save();
+});
 $("#goalForm").addEventListener("submit",e=>{e.preventDefault();if(!e.currentTarget.reportValidity())return;data.goals.push({id:id(),name:$("#goalName").value.trim(),target:Number($("#goalTarget").value),saved:Number($("#goalSaved").value||0)});e.currentTarget.reset();safeClose($("#goalModal"));save();});
 $("#investmentForm").addEventListener("submit",e=>{e.preventDefault();if(!e.currentTarget.reportValidity())return;data.investments.push({id:id(),name:$("#investmentName").value.trim(),type:$("#investmentType").value,invested:Number($("#investmentInvested").value),current:Number($("#investmentCurrent").value),date:$("#investmentDate").value});e.currentTarget.reset();safeClose($("#investmentModal"));save();});
 
 $$(".chip").forEach(c=>c.onclick=()=>{$$(".chip").forEach(x=>x.classList.remove("active"));c.classList.add("active");txFilter=c.dataset.filter;renderTransactions();});
-["statementSearch","statementMonth","statementCategory","statementSort","statementView"].forEach(id=>$("#"+id).addEventListener(id==="statementSearch"?"input":"change",renderTransactions));
-$("#clearStatementFilters").onclick=()=>{$("#statementSearch").value="";$("#statementMonth").value="";$("#statementCategory").value="all";$("#statementSort").value="newest";$("#statementView").value="grouped";txFilter="all";$$(".chip").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));renderTransactions();};
+["statementSearch","statementMonth","statementCategory","statementStatus","statementSort","statementView"].forEach(id=>$("#"+id).addEventListener(id==="statementSearch"?"input":"change",renderTransactions));
+$("#clearStatementFilters").onclick=()=>{$("#statementSearch").value="";$("#statementMonth").value="";$("#statementCategory").value="all";$("#statementStatus").value="all";$("#statementSort").value="newest";$("#statementView").value="grouped";txFilter="all";$$(".chip").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));renderTransactions();};
 
 $("#saveSettings").onclick=()=>{data.settings.budget=Number($("#budgetInput").value||0);data.settings.userName=$("#userNameInput").value.trim();save();alert("Configurações salvas.");};
 $("#themeBtn").onclick=()=>{data.settings.theme=data.settings.theme==="dark"?"light":"dark";save();};
