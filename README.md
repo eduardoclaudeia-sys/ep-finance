@@ -134,3 +134,14 @@ Notificações automáticas com o app fechado exigem configurar VAPID e publicar
 - Diagnostica Service Worker, PushManager, VAPID, autenticação e RLS/Supabase.
 - `ensurePushRegistration()` só retorna sucesso quando o registro foi realmente salvo no banco.
 - Cache atualizado para v1.6.2.
+
+
+## V1.7 — Automação financeira
+
+- Parcelamento de movimentações com geração automática das parcelas.
+- Lançamentos recorrentes semanais, mensais e anuais.
+- Importação OFX/CSV com tela de prévia e marcação de possíveis duplicidades.
+- Investimentos com ticker, quantidade e atualização automática de cotações, mantendo valor manual como fallback.
+- Biometria/passkeys (WebAuthn) por aparelho, com opção de exigir desbloqueio ao abrir.
+- Migração aditiva: dados V1.6.2 continuam válidos e não são apagados.
+- Cache do PWA atualizado para v1.7.0.

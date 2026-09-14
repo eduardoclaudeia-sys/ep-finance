@@ -16,7 +16,7 @@ function load(){
     return normalize({...defaultData,...parsed,settings:{...defaultData.settings,...(parsed.settings||{})}});
   }catch{return structuredClone(defaultData);}
 }
-function normalize(d){d.transactions=d.transactions||[];d.bills=d.bills||[];d.goals=d.goals||[];d.investments=d.investments||[];d.settings={...defaultData.settings,...(d.settings||{})};return d;}
+function normalize(d){d.transactions=d.transactions||[];d.bills=d.bills||[];d.goals=d.goals||[];d.investments=d.investments||[];d.settings={...defaultData.settings,...(d.settings||{})};return window.EPV17Data?window.EPV17Data.migrate(d):d;}
 function save(){localStorage.setItem(KEY,JSON.stringify(data));renderAll();}
 function money(v){return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});}
 function today(){
@@ -38,7 +38,7 @@ function renderAll(){
   document.body.classList.toggle("dark",data.settings.theme==="dark");
   $("#budgetInput").value=data.settings.budget||"";
   $("#userNameInput").value=data.settings.userName||"";
-  renderHome();renderTransactions();renderBills();renderGoals();renderInvestments();
+  renderHome();renderTransactions();renderBills();renderGoals();renderInvestments();if(typeof updateBiometricUI==="function")updateBiometricUI();
 }
 
 function isFutureTx(t){return Boolean(t?.date)&&t.date>today();}
@@ -158,9 +158,9 @@ function getFilteredTransactions(){
   return tx;
 }
 function txRow(t){
-  const state=isFutureTx(t)?"Agendado":"Realizado";
-  const details=[state,t.category,t.payment,fmtDate(t.date),t.note].filter(Boolean).join(" • ");
-  return itemHtml(iconFor(t.category),t.description,details,`${t.type==="income"?"+":"-"} ${money(t.value)}`,t.type,`<div class="tx-actions"><button class="text-btn edit-tx" type="button" data-id="${t.id}">Editar</button><button class="text-btn delete-tx" type="button" data-id="${t.id}">Excluir</button></div>`);
+  const scheduled=isFutureTx(t), series=t.seriesType==="installment"?` • Parcela ${t.installmentNumber}/${t.installmentCount}`:t.seriesType==="recurring"?` • Recorrente ${t.recurringIndex||""}/${t.recurringCount||""}`:"";
+  const actions=`<div class="tx-actions"><button class="text-btn edit-tx" type="button" data-id="${t.id}">Editar</button>${t.seriesId?`<button class="text-btn delete-series" type="button" data-series="${t.seriesId}">Excluir série</button>`:""}<button class="text-btn delete-tx" type="button" data-id="${t.id}">Excluir</button></div>`;
+  return itemHtml(iconFor(t.category),esc(t.description),`${esc(t.category)} • ${esc(t.payment||"")}${series}${scheduled?" • Agendado":""}`,`${t.type==="income"?"+ ":"- "}${money(t.value)}`,t.type,actions);
 }
 function renderTransactions(){
   hydrateCategoryFilter();
@@ -179,6 +179,7 @@ function renderTransactions(){
 }
 function bindTxActions(){
   $$(".delete-tx").forEach(b=>b.onclick=()=>{if(confirm("Excluir esta movimentação?")){data.transactions=data.transactions.filter(t=>t.id!==b.dataset.id);save();}});
+  $$(".delete-series").forEach(b=>b.onclick=()=>{if(confirm("Excluir os lançamentos de hoje em diante desta série?")){data=EPV17Data.deleteSeries(data,b.dataset.series,"future");save();}});
   $$(".edit-tx").forEach(b=>b.onclick=()=>openTransaction(data.transactions.find(t=>t.id===b.dataset.id)));
 }
 
@@ -224,10 +225,10 @@ function renderGoals(){
   $$(".delete-goal").forEach(btn=>btn.onclick=()=>{if(confirm("Excluir esta meta?")){data.goals=data.goals.filter(x=>x.id!==btn.dataset.id);save();}});
 }
 function renderInvestments(){
-  const invested=investedTotal(),current=currentInvestmentTotal(),result=investmentResult(),pct=invested?result/invested*100:0;
-  $("#investedTotal").textContent=money(invested);$("#currentInvestmentTotal").textContent=money(current);$("#investmentResult").textContent=(result>=0?"+ ":"- ")+money(Math.abs(result));$("#investmentResult").className=result>=0?"income":"expense";$("#investmentReturnPercent").textContent=(pct>=0?"+":"")+pct.toFixed(2).replace(".",",")+"%";$("#investmentReturnPercent").className=pct>=0?"income":"expense";
+  $("#investedTotal").textContent=shownMoney(investedTotal());$("#currentInvestmentTotal").textContent=shownMoney(currentInvestmentTotal());$("#investmentResult").textContent=shownMoney(investmentResult());
+  const pct=investedTotal()?investmentResult()/investedTotal()*100:0;$("#investmentReturnPercent").textContent=`${pct>=0?"+":""}${pct.toFixed(2).replace(".",",")}%`;
   const list=[...data.investments].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
-  $("#investmentList").innerHTML=list.length?list.map(i=>{const gain=Number(i.current)-Number(i.invested),ipct=Number(i.invested)?gain/Number(i.invested)*100:0;return `<div class="item"><div class="item-main"><div class="item-icon">◈</div><div><div class="item-title">${esc(i.name)}</div><div class="investment-meta"><span class="badge">${esc(i.type)}</span><span class="badge">${fmtDate(i.date)}</span></div><div class="item-sub">Aportado: ${money(i.invested)} • Atual: ${money(i.current)}</div></div></div><div><div class="amount ${gain>=0?"income":"expense"}">${gain>=0?"+ ":"- "}${money(Math.abs(gain))}</div><div class="item-sub" style="text-align:right">${ipct>=0?"+":""}${ipct.toFixed(2).replace(".",",")}%</div><div class="investment-actions"><button class="text-btn edit-investment" type="button" data-id="${i.id}">Atualizar</button><button class="text-btn delete-investment" type="button" data-id="${i.id}">Excluir</button></div></div></div>`}).join(""):`<div class="empty">Adicione seu primeiro investimento.</div>`;
+  $("#investmentList").innerHTML=list.length?list.map(i=>{const gain=Number(i.current)-Number(i.invested),ipct=Number(i.invested)?gain/Number(i.invested)*100:0;const ticker=i.ticker?`<span class="badge">${esc(i.ticker)}</span>`:"";const quote=i.quoteUpdatedAt?`<span class="badge">Cotação ${fmtDate(String(i.quoteUpdatedAt).slice(0,10))}</span>`:"";return `<div class="item"><div class="item-main"><div class="item-icon">◈</div><div><div class="item-title">${esc(i.name)}</div><div class="investment-meta"><span class="badge">${esc(i.type)}</span>${ticker}${quote}<span class="badge">${fmtDate(i.date)}</span></div><div class="item-sub">Aportado: ${money(i.invested)} • Atual: ${money(i.current)}${Number(i.quantity)>0?` • Qtd.: ${Number(i.quantity).toLocaleString("pt-BR")}`:""}</div></div></div><div><div class="amount ${gain>=0?"income":"expense"}">${gain>=0?"+ ":"- "}${money(Math.abs(gain))}</div><div class="item-sub" style="text-align:right">${ipct>=0?"+":""}${ipct.toFixed(2).replace(".",",")}%</div><div class="investment-actions"><button class="text-btn edit-investment" type="button" data-id="${i.id}">Atualizar manual</button><button class="text-btn delete-investment" type="button" data-id="${i.id}">Excluir</button></div></div></div>`}).join(""):`<div class="empty">Adicione seu primeiro investimento.</div>`;
   $$(".edit-investment").forEach(btn=>btn.onclick=()=>{const inv=data.investments.find(x=>x.id===btn.dataset.id),val=Number(prompt("Qual é o valor atual deste investimento?",inv.current)||inv.current);if(Number.isFinite(val)&&val>=0){inv.current=val;inv.date=today();save();}});
   $$(".delete-investment").forEach(btn=>btn.onclick=()=>{if(confirm("Excluir este investimento?")){data.investments=data.investments.filter(x=>x.id!==btn.dataset.id);save();}});
 }
@@ -255,7 +256,8 @@ $$('dialog').forEach(d=>{
 
 function openTransaction(t=null){
   $("#transactionForm").reset();$("#txEditId").value=t?.id||"";$("#transactionModalTitle").textContent=t?"Editar movimentação":"Nova movimentação";
-  $("#txType").value=t?.type||"expense";$("#txDescription").value=t?.description||"";$("#txValue").value=t?.value||"";$("#txCategory").value=t?.category||"Alimentação";$("#txDate").value=t?.date||today();$("#txPayment").value=t?.payment||"Pix";$("#txNote").value=t?.note||"";safeOpen($("#transactionModal"));
+  $("#txType").value=t?.type||"expense";$("#txDescription").value=t?.description||"";$("#txValue").value=t?.value||"";$("#txCategory").value=t?.category||"Alimentação";$("#txDate").value=t?.date||today();$("#txPayment").value=t?.payment||"Pix";$("#txNote").value=t?.note||"";
+  $("#txScheduleType").value="single";$("#txScheduleType").disabled=Boolean(t);updateScheduleFields();safeOpen($("#transactionModal"));
 }
 
 function openBill(b=null){
@@ -274,22 +276,15 @@ $("#transactionForm").addEventListener("submit",e=>{
   e.preventDefault();if(!e.currentTarget.reportValidity())return;
   const editId=$("#txEditId").value;
   const previous=editId?data.transactions.find(t=>t.id===editId):null;
-  const obj={
-    id:editId||id(),
-    type:$("#txType").value,
-    description:$("#txDescription").value.trim(),
-    value:Number($("#txValue").value),
-    category:$("#txCategory").value,
-    date:$("#txDate").value,
-    payment:$("#txPayment").value,
-    note:$("#txNote").value.trim(),
-    ...(previous?.sourceBillId?{sourceBillId:previous.sourceBillId}:{})
-  };
-  if(editId){
-    const ix=data.transactions.findIndex(t=>t.id===editId);
-    if(ix>=0)data.transactions[ix]=obj;
-  }else data.transactions.push(obj);
-  safeClose($("#transactionModal"));save();
+  const obj={id:editId||id(),type:$("#txType").value,description:$("#txDescription").value.trim(),value:Number($("#txValue").value),category:$("#txCategory").value,date:$("#txDate").value,payment:$("#txPayment").value,note:$("#txNote").value.trim(),...(previous?.sourceBillId?{sourceBillId:previous.sourceBillId}:{})};
+  if(editId){const ix=data.transactions.findIndex(t=>t.id===editId);if(ix>=0)data.transactions[ix]={...previous,...obj};}
+  else {
+    const mode=$("#txScheduleType").value;
+    if(mode==="installment"){data=EPV17Data.createInstallments(data,obj,Number($("#txInstallmentCount").value)).data;}
+    else if(mode==="recurring"){data=EPV17Data.createRecurring(data,obj,{frequency:$("#txRecurringFrequency").value,count:Number($("#txRecurringCount").value)}).data;}
+    else data.transactions.push(obj);
+  }
+  $("#txScheduleType").disabled=false;safeClose($("#transactionModal"));save();
 });
 $("#billForm").addEventListener("submit",e=>{
   e.preventDefault();if(!e.currentTarget.reportValidity())return;
@@ -334,12 +329,61 @@ $("#billForm").addEventListener("submit",e=>{
   e.currentTarget.reset();safeClose($("#billModal"));save();
 });
 $("#goalForm").addEventListener("submit",e=>{e.preventDefault();if(!e.currentTarget.reportValidity())return;data.goals.push({id:id(),name:$("#goalName").value.trim(),target:Number($("#goalTarget").value),saved:Number($("#goalSaved").value||0)});e.currentTarget.reset();safeClose($("#goalModal"));save();});
-$("#investmentForm").addEventListener("submit",e=>{e.preventDefault();if(!e.currentTarget.reportValidity())return;data.investments.push({id:id(),name:$("#investmentName").value.trim(),type:$("#investmentType").value,invested:Number($("#investmentInvested").value),current:Number($("#investmentCurrent").value),date:$("#investmentDate").value});e.currentTarget.reset();safeClose($("#investmentModal"));save();});
+$("#investmentForm").addEventListener("submit",e=>{e.preventDefault();if(!e.currentTarget.reportValidity())return;data.investments.push({id:id(),name:$("#investmentName").value.trim(),type:$("#investmentType").value,ticker:$("#investmentTicker").value.trim().toUpperCase(),quantity:Number($("#investmentQuantity").value||0),invested:Number($("#investmentInvested").value),current:Number($("#investmentCurrent").value),date:$("#investmentDate").value});e.currentTarget.reset();safeClose($("#investmentModal"));save();});
 
 $$(".chip").forEach(c=>c.onclick=()=>{$$(".chip").forEach(x=>x.classList.remove("active"));c.classList.add("active");txFilter=c.dataset.filter;renderTransactions();});
 ["statementSearch","statementMonth","statementCategory","statementStatus","statementSort","statementView"].forEach(id=>$("#"+id).addEventListener(id==="statementSearch"?"input":"change",renderTransactions));
 $("#clearStatementFilters").onclick=()=>{$("#statementSearch").value="";$("#statementMonth").value="";$("#statementCategory").value="all";$("#statementStatus").value="all";$("#statementSort").value="newest";$("#statementView").value="grouped";txFilter="all";$$(".chip").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));renderTransactions();};
 
+
+
+// ============================================
+// V1.7 — PARCELAS, RECORRÊNCIAS, IMPORTAÇÃO, COTAÇÕES E BIOMETRIA
+// ============================================
+function updateScheduleFields(){
+  const mode=$("#txScheduleType")?.value||"single";
+  if($("#txInstallmentFields")) $("#txInstallmentFields").hidden=mode!=="installment";
+  if($("#txRecurringFields")) $("#txRecurringFields").hidden=mode!=="recurring";
+}
+$("#txScheduleType")?.addEventListener("change",updateScheduleFields);updateScheduleFields();
+
+let bankImportPreview=[];
+$("#bankImportFile")?.addEventListener("change",async e=>{
+  const file=e.target.files?.[0];if(!file)return;
+  try{
+    const text=await file.text();const ext=(file.name.split(".").pop()||"").toLowerCase();
+    const parsed=ext==="ofx"?EPV17Import.parseOFX(text):EPV17Import.parseCSV(text);
+    bankImportPreview=EPV17Import.preview(data.transactions,parsed);
+    const dup=bankImportPreview.filter(x=>x._duplicate).length;
+    $("#importPreviewSummary").innerHTML=`<strong>${parsed.length} lançamento(s) encontrado(s)</strong><span>${dup} possível(is) duplicidade(s) serão desmarcadas por padrão.</span>`;
+    $("#importPreviewTable").innerHTML=bankImportPreview.length?`<table><thead><tr><th>Importar</th><th>Data</th><th>Descrição</th><th>Tipo</th><th>Valor</th></tr></thead><tbody>${bankImportPreview.map((x,i)=>`<tr class="${x._duplicate?"epv17-duplicate":""}"><td><input class="import-row-check" data-i="${i}" type="checkbox" ${x._duplicate?"":"checked"}></td><td>${fmtDate(x.date)}</td><td>${esc(x.description)}</td><td>${x.type==="income"?"Receita":"Despesa"}</td><td>${money(x.value||x.amount)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Nenhum lançamento reconhecido neste arquivo.</div>`;
+    safeOpen($("#importPreviewModal"));
+  }catch(err){console.error(err);alert("Não foi possível ler este arquivo OFX/CSV.");}
+  e.target.value="";
+});
+$("#importPreviewForm")?.addEventListener("submit",e=>{
+  e.preventDefault();
+  $$(".import-row-check").forEach(c=>{const i=Number(c.dataset.i);if(bankImportPreview[i])bankImportPreview[i]._skip=!c.checked;});
+  const result=EPV17Import.merge(data,bankImportPreview);data=result.data;safeClose($("#importPreviewModal"));save();alert(`${result.accepted.length} lançamento(s) importado(s).`);
+});
+
+$("#updateQuotes")?.addEventListener("click",async()=>{
+  const btn=$("#updateQuotes"),status=$("#quoteStatus");const withTicker=data.investments.filter(i=>i.ticker);
+  if(!withTicker.length){alert("Cadastre o ticker em pelo menos um investimento.");return;}
+  btn.disabled=true;status.textContent="Buscando cotações...";
+  try{const quotes=await EPV17Quotes.fetchQuotes(window.epSupabase,withTicker.map(i=>i.ticker));data=EPV17Quotes.applyQuotes(data,quotes);save();const ok=quotes.filter(q=>q.price!=null).length;status.textContent=`${ok} cotação(ões) atualizada(s) agora.`;}
+  catch(err){console.error(err);status.textContent="Não foi possível atualizar agora. Valores manuais foram mantidos.";alert("Falha ao buscar cotações. Seus valores atuais não foram alterados.");}
+  finally{btn.disabled=false;}
+});
+
+const BIO_CRED_KEY="epFinanceV17BioCredential";const BIO_ENABLED_KEY="epFinanceV17BioEnabled";
+function updateBiometricUI(){const enabled=localStorage.getItem(BIO_ENABLED_KEY)==="1";if($("#biometricLockEnabled"))$("#biometricLockEnabled").checked=enabled;if($("#biometricStatus")){ $("#biometricStatus").textContent=enabled?"Ativada":"Desativada";$("#biometricStatus").classList.toggle("on",enabled);$("#biometricStatus").classList.toggle("off",!enabled);}}
+async function biometricUnlock(){const cred=localStorage.getItem(BIO_CRED_KEY);if(!cred)throw new Error("Biometria ainda não configurada neste aparelho.");return EPV17Security.unlock(cred);}
+$("#enableBiometric")?.addEventListener("click",async()=>{try{if(!(await EPV17Security.available()))throw new Error("Biometria/passkey não disponível neste navegador.");const u=await window.epSupabase?.auth?.getUser();const user=u?.data?.user;if(!user)throw new Error("Entre na sua conta primeiro.");const r=await EPV17Security.register(user.id,user.email||"EP Finance");localStorage.setItem(BIO_CRED_KEY,r.credentialId);localStorage.setItem(BIO_ENABLED_KEY,"1");updateBiometricUI();alert("Biometria configurada neste aparelho.");}catch(err){console.error(err);alert(err.message||"Não foi possível configurar a biometria.");}});
+$("#testBiometric")?.addEventListener("click",async()=>{try{await biometricUnlock();alert("Desbloqueio confirmado ✅");}catch(err){alert(err.message||"Não foi possível desbloquear.");}});
+$("#biometricLockEnabled")?.addEventListener("change",e=>{if(e.target.checked&&!localStorage.getItem(BIO_CRED_KEY)){e.target.checked=false;alert("Configure a biometria primeiro.");return;}localStorage.setItem(BIO_ENABLED_KEY,e.target.checked?"1":"0");updateBiometricUI();});
+$("#unlockBiometric")?.addEventListener("click",async()=>{const msg=$("#biometricLockMessage");try{msg.textContent="";await biometricUnlock();$("#biometricLock").hidden=true;}catch(err){msg.textContent=err.message||"Falha no desbloqueio.";}});
+window.addEventListener("epfinance-authenticated",()=>{if(localStorage.getItem(BIO_ENABLED_KEY)==="1"&&localStorage.getItem(BIO_CRED_KEY)){$("#biometricLock").hidden=false;}});updateBiometricUI();
 
 function setDashboardMonth(mk){
   if(!/^\d{4}-\d{2}$/.test(mk||""))return;

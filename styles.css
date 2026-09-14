@@ -45,3 +45,7 @@
   background:rgba(34,197,94,.08);
   color:var(--good);
 }
+
+
+/* EP Finance V1.7 */
+.v17-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0 2px}.v17-toolbar-note{font-size:11px;color:var(--muted);line-height:1.35}.v17-form-box{border:1px solid var(--line);background:color-mix(in srgb,var(--accent) 4%,var(--card));border-radius:16px;padding:12px;display:grid;gap:10px}.v17-form-box small{color:var(--muted);font-size:11px;line-height:1.4}.v17-inline-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end}.v17-action-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.v17-lock{position:fixed;inset:0;z-index:1200;background:var(--bg);display:grid;place-items:center;padding:24px}.v17-lock[hidden]{display:none}.v17-lock-card{width:min(380px,100%);display:grid;justify-items:center;text-align:center;gap:13px;background:var(--card);border:1px solid var(--line);border-radius:28px;padding:28px;box-shadow:var(--shadow)}.v17-lock-card h2,.v17-lock-card p{margin:0}.v17-lock-card p,.v17-lock-card small{color:var(--muted)}.epv17-preview input[type="checkbox"]{width:20px;height:20px}.epv17-preview table{min-width:620px}.epv17-preview{overflow:auto}@media(max-width:480px){.v17-inline-fields,.v17-action-grid{grid-template-columns:1fr}.v17-toolbar{align-items:stretch}.v17-toolbar .secondary{width:100%}}

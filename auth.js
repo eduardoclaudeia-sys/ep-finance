@@ -202,6 +202,7 @@
     }
 
     gate?.classList.add('hidden');
+    window.dispatchEvent(new CustomEvent('epfinance-authenticated'));
 
     setTimeout(() => {
       if (window.ensureEpPushRegistration) {

@@ -1,8 +1,13 @@
-const CACHE_NAME = "ep-finance-v1.6.2";
+const CACHE_NAME = "ep-finance-v1.7.0";
 const STATIC_FILES = [
   "./",
   "./index.html",
-  "./styles.css",
+  "./styles.css?v=1.7.0",
+  "./v17.css?v=1.7.0",
+  "./v17-data.js?v=1.7.0",
+  "./v17-import.js?v=1.7.0",
+  "./v17-quotes.js?v=1.7.0",
+  "./v17-security.js?v=1.7.0",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png"
@@ -34,7 +39,7 @@ self.addEventListener("fetch", event => {
   // Não interfere em CDN/Supabase/outros domínios.
   if (url.origin !== self.location.origin) return;
 
-  const dynamicFile = /\/(config\.js|auth\.js|app\.js|index\.html)$/.test(url.pathname)
+  const dynamicFile = /\/(config\.js|auth\.js|app\.js|v17-data\.js|v17-import\.js|v17-quotes\.js|v17-security\.js|index\.html)$/.test(url.pathname)
     || url.pathname.endsWith("/");
 
   if (dynamicFile) {
