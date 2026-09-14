@@ -10,9 +10,10 @@
   <title>EP Finance</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=1.8.0" />
-  <link rel="stylesheet" href="v17.css?v=1.8.0" />
-  <link rel="stylesheet" href="v18.css?v=1.8.0" />
+  <link rel="stylesheet" href="styles.css?v=1.9.0" />
+  <link rel="stylesheet" href="v17.css?v=1.9.0" />
+  <link rel="stylesheet" href="v18.css?v=1.9.0" />
+  <link rel="stylesheet" href="v19.css?v=1.9.0" />
 </head>
 <body>
   <div id="authGate" class="auth-gate">
@@ -36,7 +37,10 @@
         <span class="eyebrow">EP FINANCE</span>
         <h1>Visão financeira</h1>
       </div>
-      <button id="themeBtn" class="icon-btn" type="button" aria-label="Alternar tema">◐</button>
+      <div class="topbar-actions">
+        <button id="alertCenterBtn" class="icon-btn alert-bell" type="button" aria-label="Abrir central de avisos">🔔<span id="alertCount" class="alert-count" hidden>0</span></button>
+        <button id="themeBtn" class="icon-btn" type="button" aria-label="Alternar tema">◐</button>
+      </div>
     </header>
 
     <main>
@@ -220,6 +224,18 @@
           <small class="settings-help">No iPhone, instale o EP Finance na Tela de Início antes de ativar notificações.</small>
         </div>
 
+        <div class="settings-card alert-channels-card">
+          <div class="settings-title-row"><div><h3>Central de alertas</h3><p>Escolha onde o EP Finance pode avisar você sobre vencimentos e orçamento.</p></div><span class="status-badge on">V1.9</span></div>
+          <label class="toggle-row"><span>Mostrar avisos dentro do app</span><input id="inAppAlertsEnabled" type="checkbox" checked></label>
+          <label class="toggle-row"><span>Enviar alertas importantes por e-mail</span><input id="emailAlertsEnabled" type="checkbox"></label>
+          <label class="toggle-row"><span>Resumo semanal por e-mail</span><input id="weeklyEmailEnabled" type="checkbox"></label>
+          <div class="v19-action-grid">
+            <button id="saveAlertChannels" class="secondary" type="button">Salvar canais</button>
+            <button id="exportCalendar" class="secondary" type="button">Exportar contas para calendário (.ics)</button>
+          </div>
+          <small class="settings-help">O calendário inclui contas futuras pendentes e lembrete 1 dia antes. Push continua configurado na seção Notificações.</small>
+        </div>
+
         <div class="settings-card">
           <h3>Relatório mensal por e-mail</h3>
           <p>Receba no início de cada mês um resumo do mês anterior com receitas, despesas, resultado, maiores categorias e patrimônio.</p>
@@ -321,18 +337,32 @@
     </form>
   </dialog>
 
+  <div id="alertCenterOverlay" class="alert-overlay" hidden>
+    <aside id="alertCenterPanel" class="alert-panel" role="dialog" aria-modal="true" aria-labelledby="alertCenterTitle">
+      <div class="alert-panel-head"><div><span class="eyebrow">CENTRAL</span><h2 id="alertCenterTitle">Avisos financeiros</h2></div><button id="closeAlertCenter" class="icon-btn" type="button" aria-label="Fechar">✕</button></div>
+      <div class="alert-panel-actions"><button id="markAlertsRead" class="text-btn" type="button">Marcar todos como vistos</button></div>
+      <div id="alertCenterList" class="alert-list"></div>
+    </aside>
+  </div>
+
+  <div id="pwaInstallBanner" class="pwa-install-banner" hidden>
+    <div><strong>Receba alertas mesmo com o EP Finance fechado</strong><span>No iPhone: Compartilhar → Adicionar à Tela de Início.</span></div>
+    <div class="pwa-install-actions"><button id="pwaInstallHow" class="secondary compact" type="button">Como instalar</button><button id="dismissPwaInstall" class="icon-btn" type="button" aria-label="Fechar">✕</button></div>
+  </div>
+
   <div id="biometricLock" class="v17-lock" hidden>
     <div class="v17-lock-card"><div class="auth-logo">EP</div><h2>EP Finance bloqueado</h2><p>Use a segurança do seu aparelho para continuar.</p><button id="unlockBiometric" class="primary" type="button">Desbloquear</button><small id="biometricLockMessage"></small></div>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=1.8.0"></script>
-  <script src="v17-data.js?v=1.8.0"></script>
-  <script src="v17-import.js?v=1.8.0"></script>
-  <script src="v17-quotes.js?v=1.8.0"></script>
-  <script src="v17-security.js?v=1.8.0"></script>
+  <script src="config.js?v=1.9.0"></script>
+  <script src="v17-data.js?v=1.9.0"></script>
+  <script src="v17-import.js?v=1.9.0"></script>
+  <script src="v17-quotes.js?v=1.9.0"></script>
+  <script src="v17-security.js?v=1.9.0"></script>
   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
-  <script src="v18-import.js?v=1.8.0"></script>
-  <script src="app.js?v=1.8.0"></script>
-  <script src="auth.js?v=1.8.0"></script>
+  <script src="v18-import.js?v=1.9.0"></script>
+  <script src="app.js?v=1.9.0"></script>
+  <script src="auth.js?v=1.9.0"></script>
+  <script src="v19-alerts.js?v=1.9.0"></script>
 </body>
 </html>

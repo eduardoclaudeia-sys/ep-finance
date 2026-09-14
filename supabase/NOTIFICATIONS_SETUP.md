@@ -1,12 +1,18 @@
-# Configuração das notificações automáticas
+# EP Finance V1.9 — alertas automáticos
 
-1. Execute `supabase/notifications.sql` no SQL Editor.
-2. Gere um par VAPID (public/private).
-3. Coloque a chave pública VAPID em `config.js` -> `VAPID_PUBLIC_KEY`.
-4. Configure os Secrets da Edge Function:
-   - VAPID_PUBLIC_KEY
-   - VAPID_PRIVATE_KEY
-   - VAPID_SUBJECT (ex.: mailto:seuemail@dominio.com)
-5. Deploy da função `send-finance-notifications`.
-6. Agende a função para rodar diariamente (ex.: 09:00 horário de Brasília) via Supabase Cron.
-7. No iPhone, instale o PWA na Tela de Início e use Ajustes -> Notificações -> Ativar.
+A Edge Function `send-finance-notifications` entrega o mesmo alerta por Push e, opcionalmente, por e-mail.
+
+## Secrets
+- `VAPID_PUBLIC_KEY`
+- `VAPID_PRIVATE_KEY`
+- `VAPID_SUBJECT`
+- `RESEND_API_KEY` (necessário para alertas por e-mail)
+- `FROM_EMAIL` (ex.: `EP Finance <alertas@seudominio.com>`)
+
+`SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` são fornecidos/configurados no ambiente da função.
+
+## Agendamento
+Agende `send-finance-notifications` diariamente. Sugestão: 11:00 UTC (08:00 de Brasília).
+
+## Importante
+A preferência `emailAlerts` é salva no JSON de `notification_preferences`, então não é necessária alteração destrutiva no banco.

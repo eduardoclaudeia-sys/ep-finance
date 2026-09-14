@@ -157,3 +157,13 @@ Notificações automáticas com o app fechado exigem configurar VAPID e publicar
 - Anti-duplicidade por combinação exata e por similaridade de data/valor/descrição.
 - Histórico de arquivo importado para alertar quando o mesmo PDF/OFX/CSV for enviado novamente.
 - PDFs com camada de texto são processados no navegador. PDFs puramente escaneados/imagem não usam OCR nesta versão.
+
+## V1.9 — Central de Alertas
+
+- Sininho no topo com contador de avisos não vistos.
+- Central interna para contas próximas/vencidas, orçamento e compromissos da semana.
+- Canais configuráveis: in-app, Push e e-mail.
+- Edge Function `send-finance-notifications` atualizada para Resend.
+- Exportação de contas futuras para calendário `.ics` com lembrete 1 dia antes.
+- Banner inteligente no Safari do iPhone orientando a instalação do PWA.
+- Nenhuma migração destrutiva: preferências novas ficam dentro de `settings` e no JSON já existente de `notification_preferences`.
