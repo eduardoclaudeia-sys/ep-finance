@@ -1,0 +1,11 @@
+EP Finance V1.9.1
+
+Correção do banner de instalação no iPhone:
+- botão X fecha imediatamente;
+- CSS agora respeita o atributo hidden;
+- dispensa fica salva no localStorage;
+- banner não aparece sobre a tela de bloqueio biométrico;
+- banner não aparece quando o app já roda como PWA/standalone;
+- revalidação ao voltar para o app.
+
+Nenhuma alteração destrutiva em dados/Supabase.

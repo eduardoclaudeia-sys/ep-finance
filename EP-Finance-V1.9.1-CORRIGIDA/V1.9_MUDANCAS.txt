@@ -1,0 +1,12 @@
+EP FINANCE V1.9 — CENTRAL DE ALERTAS
+
+1. Central de avisos interna com sininho e contador.
+2. Alertas de contas em 3 dias, amanhã e vencidas.
+3. Alertas de orçamento em 80% e 100%.
+4. Resumo de lançamentos agendados nos próximos 7 dias.
+5. Lembrete de aporte quando habilitado.
+6. Preferências de canais: app, Push e e-mail.
+7. Alertas importantes por e-mail via Resend na Edge Function.
+8. Exportação de contas pendentes futuras para arquivo .ics com alarme 1 dia antes.
+9. Onboarding inteligente de instalação PWA no Safari/iPhone.
+10. Dados existentes preservados; nenhuma tabela é apagada ou recriada.

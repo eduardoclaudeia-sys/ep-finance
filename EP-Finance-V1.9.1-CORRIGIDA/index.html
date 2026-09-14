@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="EP Finance" />
+  <title>EP Finance</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="styles.css?v=1.9.1" />
+  <link rel="stylesheet" href="v17.css?v=1.9.1" />
+  <link rel="stylesheet" href="v18.css?v=1.9.1" />
+  <link rel="stylesheet" href="v19.css?v=1.9.1" />
+</head>
+<body>
+  <div id="authGate" class="auth-gate">
+    <div class="auth-card">
+      <div class="auth-brand"><div class="auth-logo">EP</div><div><span class="eyebrow">EP FINANCE</span><h1>Seu financeiro em qualquer aparelho.</h1></div></div>
+      <div class="auth-tabs"><button id="loginTab" class="auth-tab active" type="button">Entrar</button><button id="signupTab" class="auth-tab" type="button">Criar conta</button></div>
+      <form id="authForm" class="auth-form">
+        <label>E-mail<input id="authEmail" type="email" autocomplete="email" required placeholder="voce@email.com"></label>
+        <label>Senha<input id="authPassword" type="password" minlength="6" autocomplete="current-password" required placeholder="Mínimo 6 caracteres"></label>
+        <button id="authSubmit" class="primary" type="submit">Entrar</button>
+      </form>
+      <button id="forgotPassword" class="text-btn auth-link" type="button">Esqueci minha senha</button>
+      <p id="authMessage" class="auth-message"></p>
+      <small class="auth-note">Seus dados ficam vinculados à sua conta e sincronizados com a nuvem.</small>
+    </div>
+  </div>
+
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <span class="eyebrow">EP FINANCE</span>
+        <h1>Visão financeira</h1>
+      </div>
+      <div class="topbar-actions">
+        <button id="alertCenterBtn" class="icon-btn alert-bell" type="button" aria-label="Abrir central de avisos">🔔<span id="alertCount" class="alert-count" hidden>0</span></button>
+        <button id="themeBtn" class="icon-btn" type="button" aria-label="Alternar tema">◐</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="screen active" id="homeScreen">
+        <div class="balance-card">
+          <div class="balance-top">
+            <span>Saldo na conta hoje</span>
+            <button id="toggleBalance" class="ghost-btn" type="button" aria-label="Ocultar saldo">👁</button>
+          </div>
+          <strong id="availableBalance">R$ 0,00</strong>
+          <small>Somente lançamentos com data até hoje</small>
+          <div class="mini-grid">
+            <div><span>Entradas realizadas no mês</span><b id="monthIncome">R$ 0,00</b></div>
+            <div><span>Saídas realizadas no mês</span><b id="monthExpense">R$ 0,00</b></div>
+          </div>
+        </div>
+
+        <section class="benefit-wallets" aria-label="Saldos de benefícios">
+          <div class="benefit-wallet va"><span>🍽️ Vale Alimentação</span><strong id="vaBalance">R$ 0,00</strong><small>Saldo separado do dinheiro</small></div>
+          <div class="benefit-wallet vr"><span>🥗 Vale Refeição</span><strong id="vrBalance">R$ 0,00</strong><small>Saldo separado do dinheiro</small></div>
+        </section>
+
+        <section class="dashboard-period">
+          <div>
+            <span class="eyebrow">COMPETÊNCIA</span>
+            <strong id="dashboardMonthLabel">Mês atual</strong>
+          </div>
+          <div class="period-controls">
+            <button id="prevDashboardMonth" class="icon-btn period-btn" type="button" aria-label="Mês anterior">‹</button>
+            <input id="dashboardMonth" type="month" aria-label="Mês de referência do dashboard">
+            <button id="nextDashboardMonth" class="icon-btn period-btn" type="button" aria-label="Próximo mês">›</button>
+          </div>
+        </section>
+
+        <div class="dashboard-grid">
+          <button class="metric-card" type="button" data-go="transactionsScreen">
+            <span>Receitas previstas</span><strong id="futureIncome">R$ 0,00</strong><small id="futureIncomeHint">No mês selecionado</small>
+          </button>
+          <button class="metric-card" type="button" data-go="transactionsScreen">
+            <span>Compromissos futuros</span><strong id="futureExpense">R$ 0,00</strong><small id="futureExpenseHint">Extrato agendado + Contas pendentes</small>
+          </button>
+          <button class="metric-card wide projection-card" type="button" data-go="transactionsScreen">
+            <span>Saldo projetado</span><strong id="projectedBalance">R$ 0,00</strong><small id="projectedBalanceHint">Até o fim do mês selecionado</small>
+          </button>
+          <button class="metric-card" type="button" data-go="investmentsScreen">
+            <span>Investimentos</span><strong id="homeInvestments">R$ 0,00</strong><small>Valor atual da carteira</small>
+          </button>
+          <button class="metric-card" type="button" data-go="investmentsScreen">
+            <span>Patrimônio atual</span><strong id="netWorth">R$ 0,00</strong><small>Saldo de hoje + investimentos</small>
+          </button>
+        </div>
+
+        <section class="section-block">
+          <div class="section-head"><h2 id="monthSummaryTitle">Resumo realizado do mês</h2><span id="monthResult">R$ 0,00</span></div>
+          <div class="monthly-split">
+            <div><span>Entrou</span><b id="summaryIncome">R$ 0,00</b></div>
+            <div><span>Saiu</span><b id="summaryExpense">R$ 0,00</b></div>
+            <div><span>Resultado</span><b id="summaryNet">R$ 0,00</b></div>
+          </div>
+        </section>
+
+        <section class="section-block">
+          <div class="section-head"><h2 id="budgetTitle">Orçamento do mês</h2><span id="budgetPercent">0%</span></div>
+          <div class="progress"><div id="budgetBar"></div></div>
+          <p id="budgetText">Defina um orçamento mensal nas configurações.</p>
+        </section>
+
+        <section class="section-block">
+          <div class="section-head"><h2 id="categoryTitle">Gastos por categoria</h2><button class="text-btn" type="button" data-go="transactionsScreen">Abrir extrato</button></div>
+          <div id="categoryBreakdown" class="category-breakdown"></div>
+        </section>
+
+        <section class="section-block">
+          <div class="section-head"><h2>Agenda financeira</h2><button class="text-btn" type="button" data-go="transactionsScreen">Ver extrato</button></div>
+          <p>Receitas e despesas futuras ficam agendadas e só entram no saldo na data indicada.</p>
+          <div id="scheduledTransactions" class="list"></div>
+        </section>
+
+        <section class="section-block">
+          <div class="section-head"><h2>Próximas contas</h2><button class="text-btn" type="button" data-go="billsScreen">Ver todas</button></div>
+          <div id="upcomingBills" class="list"></div>
+        </section>
+
+        <section class="section-block">
+          <div class="section-head"><h2>Últimas movimentações</h2><button class="text-btn" type="button" data-go="transactionsScreen">Extrato</button></div>
+          <div id="recentTransactions" class="list"></div>
+        </section>
+      </section>
+
+      <section class="screen" id="transactionsScreen">
+        <div class="page-title">
+          <div><span class="eyebrow">EXTRATO</span><h2>Movimentações</h2></div>
+          <button id="openTransactionModal" class="primary small" type="button">+ Nova</button>
+        </div>
+        <div class="v17-toolbar">
+          <label class="secondary compact file-label">Importar extrato PDF / OFX / CSV<input id="bankImportFile" type="file" accept=".pdf,.ofx,.csv,application/pdf,text/csv,application/x-ofx" hidden></label>
+          <span class="v17-toolbar-note">PDF é o formato principal. Revise e escolha cada lançamento antes de importar; possíveis duplicidades ficam desmarcadas.</span>
+        </div>
+
+        <div class="statement-summary">
+          <div><span>Entradas filtradas</span><strong id="statementIncome">R$ 0,00</strong></div>
+          <div><span>Saídas filtradas</span><strong id="statementExpense">R$ 0,00</strong></div>
+          <div><span>Saldo do filtro</span><strong id="statementNet">R$ 0,00</strong></div>
+        </div>
+
+        <div class="filter-panel">
+          <input id="statementSearch" class="search-input" placeholder="Buscar descrição ou categoria..." />
+          <div class="filter-row">
+            <button class="chip active" type="button" data-filter="all">Todas</button>
+            <button class="chip" type="button" data-filter="income">Receitas</button>
+            <button class="chip" type="button" data-filter="expense">Despesas</button>
+          </div>
+          <div class="filter-grid">
+            <label>Mês<input id="statementMonth" type="month"></label>
+            <label>Categoria<select id="statementCategory"><option value="all">Todas</option></select></label>
+            <label>Status<select id="statementStatus"><option value="all">Todos</option><option value="realized">Realizados</option><option value="future">Agendados</option></select></label>
+            <label>Carteira<select id="statementWallet"><option value="all">Todas</option><option value="cash">Conta / dinheiro</option><option value="va">Vale Alimentação</option><option value="vr">Vale Refeição</option></select></label>
+            <label>Ordenar<select id="statementSort"><option value="newest">Mais recentes</option><option value="oldest">Mais antigas</option><option value="highest">Maior valor</option><option value="lowest">Menor valor</option></select></label>
+            <label>Visual<select id="statementView"><option value="grouped">Agrupado por dia</option><option value="flat">Lista simples</option></select></label>
+          </div>
+          <button id="clearStatementFilters" class="secondary compact" type="button">Limpar filtros</button>
+        </div>
+        <div id="transactionList" class="statement-list spaced"></div>
+      </section>
+
+      <section class="screen" id="billsScreen">
+        <div class="page-title"><div><span class="eyebrow">CONTAS</span><h2>Vencimentos</h2></div><button id="openBillModal" class="primary small" type="button">+ Conta</button></div>
+        <div class="info-card"><strong>Contas = compromissos e vencimentos.</strong><span>Enquanto estiver pendente, a conta entra nos compromissos futuros do Dashboard, mas não reduz o saldo atual. Ao usar “Pagar hoje”, ela vira uma saída no Extrato.</span></div>
+        <div id="billList" class="list spaced"></div>
+      </section>
+
+      <section class="screen" id="goalsScreen">
+        <div class="page-title"><div><span class="eyebrow">METAS</span><h2>Planos e objetivos</h2></div><button id="openGoalModal" class="primary small" type="button">+ Meta</button></div>
+        <div id="goalList" class="goal-grid"></div>
+      </section>
+
+      <section class="screen" id="investmentsScreen">
+        <div class="page-title"><div><span class="eyebrow">INVESTIMENTOS</span><h2>Minha carteira</h2></div><button id="openInvestmentModal" class="primary small" type="button">+ Ativo</button></div>
+        <div class="v17-toolbar"><button id="updateQuotes" class="secondary compact" type="button">↻ Atualizar cotações</button><span id="quoteStatus" class="v17-toolbar-note">Cadastre ticker e quantidade para atualização automática.</span></div>
+        <div class="investment-summary">
+          <div class="summary-box"><span>Total aportado</span><strong id="investedTotal">R$ 0,00</strong></div>
+          <div class="summary-box"><span>Valor atual</span><strong id="currentInvestmentTotal">R$ 0,00</strong></div>
+          <div class="summary-box"><span>Resultado</span><strong id="investmentResult">R$ 0,00</strong></div>
+        </div>
+        <div class="section-block"><div class="section-head"><h2>Carteira</h2><span id="investmentReturnPercent">0%</span></div><div id="investmentList" class="list spaced"></div></div>
+      </section>
+
+      <section class="screen" id="settingsScreen">
+        <div class="page-title"><div><span class="eyebrow">AJUSTES</span><h2>Configurações</h2></div></div>
+        <div class="settings-card">
+          <label>Orçamento mensal<input id="budgetInput" type="number" min="0" step="0.01" placeholder="Ex.: 2500"></label>
+          <label>Nome para saudação<input id="userNameInput" maxlength="30" placeholder="Ex.: Eduardo"></label>
+          <button id="saveSettings" class="primary" type="button">Salvar configurações</button>
+        </div>
+        <div class="settings-card"><h3>Backup</h3><p>Exporte seus dados antes de trocar de aparelho ou limpar o navegador.</p><div class="stack"><button id="exportData" class="secondary" type="button">Exportar backup</button><label class="secondary file-label">Importar backup<input id="importData" type="file" accept="application/json" hidden></label></div></div>
+
+        <div class="settings-card notification-card">
+          <div class="settings-title-row">
+            <div>
+              <h3>Notificações</h3>
+              <p id="notificationSupportText">Verificando compatibilidade deste aparelho...</p>
+            </div>
+            <span id="notificationStatusBadge" class="status-badge">Desativadas</span>
+          </div>
+
+          <button id="enableNotifications" class="primary" type="button">Ativar notificações</button>
+          <button id="testNotification" class="secondary" type="button">Enviar notificação de teste</button>
+
+          <div class="notification-options">
+            <label class="toggle-row"><span>Contas 3 dias antes</span><input id="notifyBills3Days" type="checkbox"></label>
+            <label class="toggle-row"><span>Contas 1 dia antes</span><input id="notifyBills1Day" type="checkbox"></label>
+            <label class="toggle-row"><span>Contas vencidas</span><input id="notifyBillsOverdue" type="checkbox"></label>
+            <label class="toggle-row"><span>Orçamento em 80%</span><input id="notifyBudget80" type="checkbox"></label>
+            <label class="toggle-row"><span>Orçamento em 100%</span><input id="notifyBudget100" type="checkbox"></label>
+            <label class="toggle-row"><span>Resumo semanal</span><input id="notifyWeeklySummary" type="checkbox"></label>
+            <label class="toggle-row"><span>Lembrete mensal de aporte</span><input id="notifyInvestmentReminder" type="checkbox"></label>
+          </div>
+
+          <button id="saveNotificationPreferences" class="secondary" type="button">Salvar preferências</button>
+          <div id="pushDiagnostic" class="push-diagnostic" hidden></div>
+          <small class="settings-help">No iPhone, instale o EP Finance na Tela de Início antes de ativar notificações.</small>
+        </div>
+
+        <div class="settings-card alert-channels-card">
+          <div class="settings-title-row"><div><h3>Central de alertas</h3><p>Escolha onde o EP Finance pode avisar você sobre vencimentos e orçamento.</p></div><span class="status-badge on">V1.9</span></div>
+          <label class="toggle-row"><span>Mostrar avisos dentro do app</span><input id="inAppAlertsEnabled" type="checkbox" checked></label>
+          <label class="toggle-row"><span>Enviar alertas importantes por e-mail</span><input id="emailAlertsEnabled" type="checkbox"></label>
+          <label class="toggle-row"><span>Resumo semanal por e-mail</span><input id="weeklyEmailEnabled" type="checkbox"></label>
+          <div class="v19-action-grid">
+            <button id="saveAlertChannels" class="secondary" type="button">Salvar canais</button>
+            <button id="exportCalendar" class="secondary" type="button">Exportar contas para calendário (.ics)</button>
+          </div>
+          <small class="settings-help">O calendário inclui contas futuras pendentes e lembrete 1 dia antes. Push continua configurado na seção Notificações.</small>
+        </div>
+
+        <div class="settings-card">
+          <h3>Relatório mensal por e-mail</h3>
+          <p>Receba no início de cada mês um resumo do mês anterior com receitas, despesas, resultado, maiores categorias e patrimônio.</p>
+          <label class="toggle-row"><span>Enviar relatório automaticamente</span><input id="monthlyReportEnabled" type="checkbox"></label>
+          <button id="saveEmailPreferences" class="secondary" type="button">Salvar preferência</button>
+        </div>
+        <div class="settings-card">
+          <div class="settings-title-row"><div><h3>Biometria / Passkey</h3><p>Proteja a abertura deste aparelho com Face ID, Touch ID, biometria ou PIN do dispositivo.</p></div><span id="biometricStatus" class="status-badge">Desativada</span></div>
+          <label class="toggle-row"><span>Exigir desbloqueio ao abrir</span><input id="biometricLockEnabled" type="checkbox"></label>
+          <div class="v17-action-grid"><button id="enableBiometric" class="primary" type="button">Configurar biometria</button><button id="testBiometric" class="secondary" type="button">Testar desbloqueio</button></div>
+          <small class="settings-help">Funciona somente em HTTPS e depende do suporte do aparelho/navegador. Não substitui seu login.</small>
+        </div>
+        <div class="settings-card">
+          <h3>Conta</h3>
+          <p id="accountEmail">—</p>
+          <button id="logoutBtn" class="secondary" type="button">Sair da conta</button>
+        </div>
+        <div class="settings-card danger-zone"><h3>Apagar dados</h3><p>Remove todas as informações salvas neste aparelho.</p><button id="clearData" class="danger" type="button">Apagar tudo</button></div>
+      </section>
+    </main>
+
+    <button id="fab" class="fab" type="button" aria-label="Adicionar movimentação">+</button>
+
+    <nav class="bottom-nav">
+      <button class="nav-item active" type="button" data-screen="homeScreen">⌂<span>Início</span></button>
+      <button class="nav-item" type="button" data-screen="transactionsScreen">↕<span>Extrato</span></button>
+      <button class="nav-item" type="button" data-screen="billsScreen">▣<span>Contas</span></button>
+      <button class="nav-item" type="button" data-screen="goalsScreen">◎<span>Metas</span></button>
+      <button class="nav-item" type="button" data-screen="investmentsScreen">◈<span>Invest.</span></button>
+      <button class="nav-item" type="button" data-screen="settingsScreen">⚙<span>Ajustes</span></button>
+    </nav>
+  </div>
+
+  <dialog id="transactionModal">
+    <form id="transactionForm">
+      <div class="modal-head"><div><span class="eyebrow">MOVIMENTAÇÃO</span><h3 id="transactionModalTitle">Nova movimentação</h3></div><button type="button" class="icon-btn close-modal" data-close="transactionModal">✕</button></div>
+      <input id="txEditId" type="hidden">
+      <label>Tipo<select id="txType" required><option value="expense">Despesa</option><option value="income">Receita</option></select></label>
+      <label>Descrição<input id="txDescription" required placeholder="Ex.: Mercado, Salário"></label>
+      <label>Valor<input id="txValue" type="number" min="0.01" step="0.01" required></label>
+      <label>Categoria<select id="txCategory"><option>Moradia</option><option>Alimentação</option><option>Transporte</option><option>Saúde</option><option>Educação</option><option>Lazer</option><option>Salário</option><option>Investimentos</option><option>Outros</option></select></label>
+      <label>Data<input id="txDate" type="date" required></label>
+      <label>Carteira / saldo<select id="txWallet"><option value="cash">Conta / dinheiro</option><option value="va">Vale Alimentação (VA)</option><option value="vr">Vale Refeição (VR)</option></select></label>
+      <label>Forma de pagamento<select id="txPayment"><option>Pix</option><option>Débito</option><option>Crédito</option><option>Dinheiro</option><option>Transferência</option><option>Vale Alimentação</option><option>Vale Refeição</option><option>Outro</option></select></label>
+      <label>Observação<input id="txNote" maxlength="80" placeholder="Opcional"></label>
+      <div class="v17-form-box">
+        <label>Repetição<select id="txScheduleType"><option value="single">Lançamento único</option><option value="installment">Parcelado</option><option value="recurring">Recorrente</option></select></label>
+        <div id="txInstallmentFields" class="v17-inline-fields" hidden><label>Nº de parcelas<input id="txInstallmentCount" type="number" min="2" max="120" value="2"></label><small>O valor informado acima será dividido entre as parcelas.</small></div>
+        <div id="txRecurringFields" class="v17-inline-fields" hidden><label>Frequência<select id="txRecurringFrequency"><option value="monthly">Mensal</option><option value="weekly">Semanal</option><option value="yearly">Anual</option></select></label><label>Quantidade<input id="txRecurringCount" type="number" min="2" max="240" value="12"></label></div>
+      </div>
+      <div class="modal-actions"><button type="button" class="secondary close-modal" data-close="transactionModal">Cancelar</button><button class="primary" type="submit">Salvar</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="billModal">
+    <form id="billForm">
+      <input id="billEditId" type="hidden">
+      <div class="modal-head"><h3 id="billModalTitle">Nova conta</h3><button type="button" class="icon-btn close-modal" data-close="billModal">✕</button></div>
+      <label>Descrição<input id="billDescription" required placeholder="Ex.: Aluguel"></label>
+      <label>Valor<input id="billValue" type="number" min="0.01" step="0.01" required></label>
+      <label>Vencimento<input id="billDue" type="date" required></label>
+      <label>Categoria<select id="billCategory"><option>Moradia</option><option>Alimentação</option><option>Transporte</option><option>Saúde</option><option>Educação</option><option>Lazer</option><option>Outros</option></select></label>
+      <label>Status<select id="billStatus"><option value="pending">Pendente</option><option value="paid">Pago</option></select></label>
+      <div class="modal-actions"><button type="button" class="secondary close-modal" data-close="billModal">Cancelar</button><button class="primary" type="submit">Salvar conta</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="goalModal">
+    <form id="goalForm">
+      <div class="modal-head"><h3>Nova meta</h3><button type="button" class="icon-btn close-modal" data-close="goalModal">✕</button></div>
+      <label>Nome<input id="goalName" required placeholder="Ex.: Reserva de emergência"></label>
+      <label>Valor da meta<input id="goalTarget" type="number" min="0.01" step="0.01" required></label>
+      <label>Já guardado<input id="goalSaved" type="number" min="0" step="0.01" value="0"></label>
+      <div class="modal-actions"><button type="button" class="secondary close-modal" data-close="goalModal">Cancelar</button><button class="primary" type="submit">Salvar meta</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="investmentModal">
+    <form id="investmentForm">
+      <div class="modal-head"><h3>Novo investimento</h3><button type="button" class="icon-btn close-modal" data-close="investmentModal">✕</button></div>
+      <label>Nome do ativo<input id="investmentName" required placeholder="Ex.: Tesouro Selic, CDB, Bitcoin"></label>
+      <label>Tipo<select id="investmentType"><option>Renda Fixa</option><option>Fundo</option><option>Ação</option><option>ETF</option><option>Criptomoeda</option><option>Outro</option></select></label>
+      <div class="v17-form-box"><label>Ticker / código<input id="investmentTicker" maxlength="20" placeholder="Ex.: PETR4, IVVB11"></label><label>Quantidade de ativos<input id="investmentQuantity" type="number" min="0" step="0.00000001" placeholder="Opcional"></label><small class="settings-help">Ticker + quantidade permitem atualizar o valor atual automaticamente. Para renda fixa, você pode continuar usando valor manual.</small></div>
+      <label>Total aportado<input id="investmentInvested" type="number" min="0" step="0.01" required></label>
+      <label>Valor atual<input id="investmentCurrent" type="number" min="0" step="0.01" required></label>
+      <label>Data de referência<input id="investmentDate" type="date" required></label>
+      <div class="modal-actions"><button type="button" class="secondary close-modal" data-close="investmentModal">Cancelar</button><button class="primary" type="submit">Salvar investimento</button></div>
+    </form>
+  </dialog>
+
+
+  <dialog id="importPreviewModal" class="wide-dialog">
+    <form id="importPreviewForm">
+      <div class="modal-head"><div><span class="eyebrow">IMPORTAÇÃO</span><h3>Revisar lançamentos</h3></div><button type="button" class="icon-btn close-modal" data-close="importPreviewModal">✕</button></div>
+      <div id="importPreviewSummary" class="info-card"></div>
+      <div class="import-help">Marque apenas o que deseja adicionar. Você pode corrigir data, descrição, tipo, categoria, carteira e valor antes da confirmação.</div>
+      <div id="importPreviewTable" class="epv17-preview"></div>
+      <div class="modal-actions"><button type="button" class="secondary close-modal" data-close="importPreviewModal">Cancelar</button><button id="confirmBankImport" class="primary" type="submit">Importar selecionados</button></div>
+    </form>
+  </dialog>
+
+  <div id="alertCenterOverlay" class="alert-overlay" hidden>
+    <aside id="alertCenterPanel" class="alert-panel" role="dialog" aria-modal="true" aria-labelledby="alertCenterTitle">
+      <div class="alert-panel-head"><div><span class="eyebrow">CENTRAL</span><h2 id="alertCenterTitle">Avisos financeiros</h2></div><button id="closeAlertCenter" class="icon-btn" type="button" aria-label="Fechar">✕</button></div>
+      <div class="alert-panel-actions"><button id="markAlertsRead" class="text-btn" type="button">Marcar todos como vistos</button></div>
+      <div id="alertCenterList" class="alert-list"></div>
+    </aside>
+  </div>
+
+  <div id="pwaInstallBanner" class="pwa-install-banner" hidden>
+    <div><strong>Receba alertas mesmo com o EP Finance fechado</strong><span>No iPhone: Compartilhar → Adicionar à Tela de Início.</span></div>
+    <div class="pwa-install-actions"><button id="pwaInstallHow" class="secondary compact" type="button">Como instalar</button><button id="dismissPwaInstall" class="icon-btn" type="button" aria-label="Fechar">✕</button></div>
+  </div>
+
+  <div id="biometricLock" class="v17-lock" hidden>
+    <div class="v17-lock-card"><div class="auth-logo">EP</div><h2>EP Finance bloqueado</h2><p>Use a segurança do seu aparelho para continuar.</p><button id="unlockBiometric" class="primary" type="button">Desbloquear</button><small id="biometricLockMessage"></small></div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js?v=1.9.1"></script>
+  <script src="v17-data.js?v=1.9.1"></script>
+  <script src="v17-import.js?v=1.9.1"></script>
+  <script src="v17-quotes.js?v=1.9.1"></script>
+  <script src="v17-security.js?v=1.9.1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+  <script src="v18-import.js?v=1.9.1"></script>
+  <script src="app.js?v=1.9.1"></script>
+  <script src="auth.js?v=1.9.1"></script>
+  <script src="v19-alerts.js?v=1.9.1"></script>
+</body>
+</html>
