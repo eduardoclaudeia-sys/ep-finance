@@ -1,0 +1,31 @@
+EP FINANCE V1.8 — PRINCIPAIS MUDANÇAS
+
+1. VALE ALIMENTAÇÃO / VALE REFEIÇÃO
+- Nova carteira Conta / Dinheiro.
+- Nova carteira Vale Alimentação (VA).
+- Nova carteira Vale Refeição (VR).
+- Receitas de VA/VR aumentam apenas o saldo do respectivo benefício.
+- Despesas de VA/VR descontam apenas daquele benefício.
+- VA/VR não entram no patrimônio financeiro (saldo bancário + investimentos).
+- Lançamentos antigos sem carteira continuam sendo tratados como Conta / Dinheiro.
+
+2. IMPORTAÇÃO DE EXTRATO
+- PDF passa a ser formato principal.
+- Mantém OFX e CSV.
+- PDFs com texto são lidos diretamente no navegador.
+- Tela de conciliação permite escolher quais lançamentos serão adicionados.
+- Antes de confirmar é possível alterar data, descrição, tipo, categoria, carteira e valor.
+
+3. ANTI-DUPLICIDADE
+- Comparação exata por data + valor + descrição.
+- Segunda camada por valor + janela de até 2 dias + descrição semelhante.
+- Possíveis duplicados ficam desmarcados por padrão.
+- SHA-256 do arquivo é guardado no histórico de importação para avisar quando o mesmo arquivo for enviado novamente.
+
+4. COMPATIBILIDADE
+- Nenhuma tabela Supabase precisa ser apagada ou recriada.
+- Nenhum lançamento antigo é alterado.
+- Campos novos são opcionais e retrocompatíveis.
+
+LIMITAÇÃO ATUAL
+- PDF escaneado como imagem, sem camada de texto, não usa OCR nesta versão. Nesse caso, prefira o PDF digital exportado pelo banco, OFX ou CSV.

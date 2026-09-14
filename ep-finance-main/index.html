@@ -10,9 +10,8 @@
   <title>EP Finance</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=1.8.0" />
-  <link rel="stylesheet" href="v17.css?v=1.8.0" />
-  <link rel="stylesheet" href="v18.css?v=1.8.0" />
+  <link rel="stylesheet" href="styles.css?v=1.7.0" />
+  <link rel="stylesheet" href="v17.css?v=1.7.0" />
 </head>
 <body>
   <div id="authGate" class="auth-gate">
@@ -53,11 +52,6 @@
             <div><span>Saídas realizadas no mês</span><b id="monthExpense">R$ 0,00</b></div>
           </div>
         </div>
-
-        <section class="benefit-wallets" aria-label="Saldos de benefícios">
-          <div class="benefit-wallet va"><span>🍽️ Vale Alimentação</span><strong id="vaBalance">R$ 0,00</strong><small>Saldo separado do dinheiro</small></div>
-          <div class="benefit-wallet vr"><span>🥗 Vale Refeição</span><strong id="vrBalance">R$ 0,00</strong><small>Saldo separado do dinheiro</small></div>
-        </section>
 
         <section class="dashboard-period">
           <div>
@@ -132,8 +126,8 @@
           <button id="openTransactionModal" class="primary small" type="button">+ Nova</button>
         </div>
         <div class="v17-toolbar">
-          <label class="secondary compact file-label">Importar extrato PDF / OFX / CSV<input id="bankImportFile" type="file" accept=".pdf,.ofx,.csv,application/pdf,text/csv,application/x-ofx" hidden></label>
-          <span class="v17-toolbar-note">PDF é o formato principal. Revise e escolha cada lançamento antes de importar; possíveis duplicidades ficam desmarcadas.</span>
+          <label class="secondary compact file-label">Importar OFX/CSV<input id="bankImportFile" type="file" accept=".ofx,.csv,text/csv,application/x-ofx" hidden></label>
+          <span class="v17-toolbar-note">Revise os lançamentos antes de importar. Duplicidades são sinalizadas.</span>
         </div>
 
         <div class="statement-summary">
@@ -153,7 +147,6 @@
             <label>Mês<input id="statementMonth" type="month"></label>
             <label>Categoria<select id="statementCategory"><option value="all">Todas</option></select></label>
             <label>Status<select id="statementStatus"><option value="all">Todos</option><option value="realized">Realizados</option><option value="future">Agendados</option></select></label>
-            <label>Carteira<select id="statementWallet"><option value="all">Todas</option><option value="cash">Conta / dinheiro</option><option value="va">Vale Alimentação</option><option value="vr">Vale Refeição</option></select></label>
             <label>Ordenar<select id="statementSort"><option value="newest">Mais recentes</option><option value="oldest">Mais antigas</option><option value="highest">Maior valor</option><option value="lowest">Menor valor</option></select></label>
             <label>Visual<select id="statementView"><option value="grouped">Agrupado por dia</option><option value="flat">Lista simples</option></select></label>
           </div>
@@ -262,8 +255,7 @@
       <label>Valor<input id="txValue" type="number" min="0.01" step="0.01" required></label>
       <label>Categoria<select id="txCategory"><option>Moradia</option><option>Alimentação</option><option>Transporte</option><option>Saúde</option><option>Educação</option><option>Lazer</option><option>Salário</option><option>Investimentos</option><option>Outros</option></select></label>
       <label>Data<input id="txDate" type="date" required></label>
-      <label>Carteira / saldo<select id="txWallet"><option value="cash">Conta / dinheiro</option><option value="va">Vale Alimentação (VA)</option><option value="vr">Vale Refeição (VR)</option></select></label>
-      <label>Forma de pagamento<select id="txPayment"><option>Pix</option><option>Débito</option><option>Crédito</option><option>Dinheiro</option><option>Transferência</option><option>Vale Alimentação</option><option>Vale Refeição</option><option>Outro</option></select></label>
+      <label>Forma de pagamento<select id="txPayment"><option>Pix</option><option>Débito</option><option>Crédito</option><option>Dinheiro</option><option>Transferência</option><option>Outro</option></select></label>
       <label>Observação<input id="txNote" maxlength="80" placeholder="Opcional"></label>
       <div class="v17-form-box">
         <label>Repetição<select id="txScheduleType"><option value="single">Lançamento único</option><option value="installment">Parcelado</option><option value="recurring">Recorrente</option></select></label>
@@ -311,11 +303,10 @@
   </dialog>
 
 
-  <dialog id="importPreviewModal" class="wide-dialog">
+  <dialog id="importPreviewModal">
     <form id="importPreviewForm">
       <div class="modal-head"><div><span class="eyebrow">IMPORTAÇÃO</span><h3>Revisar lançamentos</h3></div><button type="button" class="icon-btn close-modal" data-close="importPreviewModal">✕</button></div>
       <div id="importPreviewSummary" class="info-card"></div>
-      <div class="import-help">Marque apenas o que deseja adicionar. Você pode corrigir data, descrição, tipo, categoria, carteira e valor antes da confirmação.</div>
       <div id="importPreviewTable" class="epv17-preview"></div>
       <div class="modal-actions"><button type="button" class="secondary close-modal" data-close="importPreviewModal">Cancelar</button><button id="confirmBankImport" class="primary" type="submit">Importar selecionados</button></div>
     </form>
@@ -325,14 +316,12 @@
     <div class="v17-lock-card"><div class="auth-logo">EP</div><h2>EP Finance bloqueado</h2><p>Use a segurança do seu aparelho para continuar.</p><button id="unlockBiometric" class="primary" type="button">Desbloquear</button><small id="biometricLockMessage"></small></div>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=1.8.0"></script>
-  <script src="v17-data.js?v=1.8.0"></script>
-  <script src="v17-import.js?v=1.8.0"></script>
-  <script src="v17-quotes.js?v=1.8.0"></script>
-  <script src="v17-security.js?v=1.8.0"></script>
-  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
-  <script src="v18-import.js?v=1.8.0"></script>
-  <script src="app.js?v=1.8.0"></script>
-  <script src="auth.js?v=1.8.0"></script>
+  <script src="config.js?v=1.7.0"></script>
+  <script src="v17-data.js?v=1.7.0"></script>
+  <script src="v17-import.js?v=1.7.0"></script>
+  <script src="v17-quotes.js?v=1.7.0"></script>
+  <script src="v17-security.js?v=1.7.0"></script>
+  <script src="app.js?v=1.7.0"></script>
+  <script src="auth.js?v=1.7.0"></script>
 </body>
 </html>

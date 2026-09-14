@@ -2,7 +2,7 @@ const KEY="epFinanceV12";
 const LEGACY_KEYS=["epFinanceV1"];
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
-const categories=["Moradia","Alimentação","Transporte","Saúde","Educação","Lazer","Salário","Benefícios","Investimentos","Outros"];
+const categories=["Moradia","Alimentação","Transporte","Saúde","Educação","Lazer","Salário","Investimentos","Outros"];
 const defaultData={transactions:[],bills:[],goals:[],investments:[],settings:{budget:0,theme:"light",hideBalance:false,userName:""}};
 let data=load();
 let txFilter="all";
@@ -32,11 +32,7 @@ function fmtMonth(mk){if(!mk)return"";const [y,m]=mk.split("-").map(Number);retu
 function shiftMonth(mk,delta){const [y,m]=mk.split("-").map(Number),d=new Date(y,m-1+delta,1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;}
 function id(){return crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random();}
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));}
-function iconFor(cat){const m={Moradia:"🏠",Alimentação:"🍽️",Transporte:"🚗",Saúde:"❤️",Educação:"🎓",Lazer:"🎮",Salário:"💼",Benefícios:"🎫",Investimentos:"📈",Outros:"•"};return m[cat]||"•";}
-function walletKey(t){return t?.wallet||"cash";}
-function walletLabel(w){return w==="va"?"Vale Alimentação":w==="vr"?"Vale Refeição":"Conta / dinheiro";}
-function walletBalance(w="cash"){return realizedTransactions().filter(t=>walletKey(t)===w).reduce((a,t)=>a+(t.type==="income"?Number(t.value):-Number(t.value)),0);}
-function walletBadge(w){return w==="cash"?"":`<span class="wallet-badge ${w}">${w==="va"?"VA":"VR"}</span>`;}
+function iconFor(cat){const m={Moradia:"🏠",Alimentação:"🍽️",Transporte:"🚗",Saúde:"❤️",Educação:"🎓",Lazer:"🎮",Salário:"💼",Investimentos:"📈",Outros:"•"};return m[cat]||"•";}
 
 function renderAll(){
   document.body.classList.toggle("dark",data.settings.theme==="dark");
@@ -60,10 +56,10 @@ function futureTxExpense(mk=dashboardMonthKey){return futureTransactionsForMonth
 function pendingBillsForMonth(mk=dashboardMonthKey){return data.bills.filter(b=>b.status!=="paid"&&monthKey(b.due)===mk&&b.due>=today());}
 function pendingBillsExpense(mk=dashboardMonthKey){return pendingBillsForMonth(mk).reduce((a,b)=>a+Number(b.value),0);}
 function futureExpense(mk=dashboardMonthKey){return futureTxExpense(mk)+pendingBillsExpense(mk);}
-function balance(){return walletBalance("cash");}
+function balance(){return realizedTransactions().reduce((a,t)=>a+(t.type==="income"?Number(t.value):-Number(t.value)),0);}
 function available(){return balance();}
 function monthEnd(mk){const [y,m]=mk.split("-").map(Number);return `${y}-${String(m).padStart(2,"0")}-${String(new Date(y,m,0).getDate()).padStart(2,"0")}`;}
-function futureTxUntil(mk){const end=monthEnd(mk);return futureTransactions().filter(t=>t.date<=end&&walletKey(t)==="cash");}
+function futureTxUntil(mk){const end=monthEnd(mk);return futureTransactions().filter(t=>t.date<=end);}
 function pendingBillsUntil(mk){const end=monthEnd(mk);return data.bills.filter(b=>b.status!=="paid"&&b.due>=today()&&b.due<=end);}
 function projectedBalance(mk=dashboardMonthKey){
   const tx=futureTxUntil(mk).reduce((a,t)=>a+(t.type==="income"?Number(t.value):-Number(t.value)),0);
@@ -85,8 +81,6 @@ function renderHome(){
   if($("#budgetTitle"))$("#budgetTitle").textContent=`Orçamento • ${fmtMonth(mk)}`;
   if($("#categoryTitle"))$("#categoryTitle").textContent=`Gastos por categoria • ${fmtMonth(mk)}`;
   $("#availableBalance").textContent=shownMoney(available());
-  if($("#vaBalance"))$("#vaBalance").textContent=shownMoney(walletBalance("va"));
-  if($("#vrBalance"))$("#vrBalance").textContent=shownMoney(walletBalance("vr"));
   $("#monthIncome").textContent=shownMoney(inc);
   $("#monthExpense").textContent=shownMoney(exp);
   $("#futureIncome").textContent=shownMoney(futureIncome(mk));
@@ -149,7 +143,6 @@ function getFilteredTransactions(){
   const mk=$("#statementMonth")?.value||"";
   const cat=$("#statementCategory")?.value||"all";
   const status=$("#statementStatus")?.value||"all";
-  const wallet=$("#statementWallet")?.value||"all";
   const sort=$("#statementSort")?.value||"newest";
   let tx=[...data.transactions];
   if(txFilter!=="all")tx=tx.filter(t=>t.type===txFilter);
@@ -157,7 +150,6 @@ function getFilteredTransactions(){
   if(cat!=="all")tx=tx.filter(t=>t.category===cat);
   if(status==="realized")tx=tx.filter(isRealizedTx);
   if(status==="future")tx=tx.filter(isFutureTx);
-  if(wallet!=="all")tx=tx.filter(t=>walletKey(t)===wallet);
   if(q)tx=tx.filter(t=>`${t.description} ${t.category} ${t.payment||""} ${t.note||""}`.toLowerCase().includes(q));
   if(sort==="newest")tx.sort(sortNewest);
   if(sort==="oldest")tx.sort((a,b)=>sortNewest(b,a));
@@ -168,7 +160,7 @@ function getFilteredTransactions(){
 function txRow(t){
   const scheduled=isFutureTx(t), series=t.seriesType==="installment"?` • Parcela ${t.installmentNumber}/${t.installmentCount}`:t.seriesType==="recurring"?` • Recorrente ${t.recurringIndex||""}/${t.recurringCount||""}`:"";
   const actions=`<div class="tx-actions"><button class="text-btn edit-tx" type="button" data-id="${t.id}">Editar</button>${t.seriesId?`<button class="text-btn delete-series" type="button" data-series="${t.seriesId}">Excluir série</button>`:""}<button class="text-btn delete-tx" type="button" data-id="${t.id}">Excluir</button></div>`;
-  return itemHtml(iconFor(t.category),`${esc(t.description)} ${walletBadge(walletKey(t))}`,`${esc(t.category)} • ${esc(walletLabel(walletKey(t)))} • ${esc(t.payment||"")}${series}${scheduled?" • Agendado":""}`,`${t.type==="income"?"+ ":"- "}${money(t.value)}`,t.type,actions);
+  return itemHtml(iconFor(t.category),esc(t.description),`${esc(t.category)} • ${esc(t.payment||"")}${series}${scheduled?" • Agendado":""}`,`${t.type==="income"?"+ ":"- "}${money(t.value)}`,t.type,actions);
 }
 function renderTransactions(){
   hydrateCategoryFilter();
@@ -207,7 +199,7 @@ function renderBills(){
     if(linked){b.status="paid";save();return;}
     data.transactions.push({
       id:id(),type:"expense",description:b.description,value:Number(b.value),
-      category:b.category||"Outros",date:today(),wallet:"cash",payment:"Pix",
+      category:b.category||"Outros",date:today(),payment:"Pix",
       note:`Pagamento da conta com vencimento em ${fmtDate(b.due)}`,sourceBillId:b.id
     });
     b.status="paid";save();
@@ -264,7 +256,7 @@ $$('dialog').forEach(d=>{
 
 function openTransaction(t=null){
   $("#transactionForm").reset();$("#txEditId").value=t?.id||"";$("#transactionModalTitle").textContent=t?"Editar movimentação":"Nova movimentação";
-  $("#txType").value=t?.type||"expense";$("#txDescription").value=t?.description||"";$("#txValue").value=t?.value||"";$("#txCategory").value=t?.category||"Alimentação";$("#txDate").value=t?.date||today();$("#txWallet").value=t?.wallet||"cash";$("#txPayment").value=t?.payment||"Pix";$("#txNote").value=t?.note||"";
+  $("#txType").value=t?.type||"expense";$("#txDescription").value=t?.description||"";$("#txValue").value=t?.value||"";$("#txCategory").value=t?.category||"Alimentação";$("#txDate").value=t?.date||today();$("#txPayment").value=t?.payment||"Pix";$("#txNote").value=t?.note||"";
   $("#txScheduleType").value="single";$("#txScheduleType").disabled=Boolean(t);updateScheduleFields();safeOpen($("#transactionModal"));
 }
 
@@ -284,7 +276,7 @@ $("#transactionForm").addEventListener("submit",e=>{
   e.preventDefault();if(!e.currentTarget.reportValidity())return;
   const editId=$("#txEditId").value;
   const previous=editId?data.transactions.find(t=>t.id===editId):null;
-  const obj={id:editId||id(),type:$("#txType").value,description:$("#txDescription").value.trim(),value:Number($("#txValue").value),category:$("#txCategory").value,date:$("#txDate").value,wallet:$("#txWallet").value,payment:$("#txPayment").value,note:$("#txNote").value.trim(),...(previous?.sourceBillId?{sourceBillId:previous.sourceBillId}:{})};
+  const obj={id:editId||id(),type:$("#txType").value,description:$("#txDescription").value.trim(),value:Number($("#txValue").value),category:$("#txCategory").value,date:$("#txDate").value,payment:$("#txPayment").value,note:$("#txNote").value.trim(),...(previous?.sourceBillId?{sourceBillId:previous.sourceBillId}:{})};
   if(editId){const ix=data.transactions.findIndex(t=>t.id===editId);if(ix>=0)data.transactions[ix]={...previous,...obj};}
   else {
     const mode=$("#txScheduleType").value;
@@ -316,7 +308,7 @@ $("#billForm").addEventListener("submit",e=>{
   if(bill.status==="paid"&&!linked){
     data.transactions.push({
       id:id(),type:"expense",description:bill.description,value:Number(bill.value),
-      category:bill.category||"Outros",date:today(),wallet:"cash",payment:"Pix",
+      category:bill.category||"Outros",date:today(),payment:"Pix",
       note:`Pagamento da conta com vencimento em ${fmtDate(bill.due)}`,sourceBillId:bill.id
     });
     linked=data.transactions.find(t=>t.sourceBillId===bill.id);
@@ -340,13 +332,10 @@ $("#goalForm").addEventListener("submit",e=>{e.preventDefault();if(!e.currentTar
 $("#investmentForm").addEventListener("submit",e=>{e.preventDefault();if(!e.currentTarget.reportValidity())return;data.investments.push({id:id(),name:$("#investmentName").value.trim(),type:$("#investmentType").value,ticker:$("#investmentTicker").value.trim().toUpperCase(),quantity:Number($("#investmentQuantity").value||0),invested:Number($("#investmentInvested").value),current:Number($("#investmentCurrent").value),date:$("#investmentDate").value});e.currentTarget.reset();safeClose($("#investmentModal"));save();});
 
 $$(".chip").forEach(c=>c.onclick=()=>{$$(".chip").forEach(x=>x.classList.remove("active"));c.classList.add("active");txFilter=c.dataset.filter;renderTransactions();});
-["statementSearch","statementMonth","statementCategory","statementStatus","statementWallet","statementSort","statementView"].forEach(id=>$("#"+id).addEventListener(id==="statementSearch"?"input":"change",renderTransactions));
-$("#clearStatementFilters").onclick=()=>{$("#statementSearch").value="";$("#statementMonth").value="";$("#statementCategory").value="all";$("#statementStatus").value="all";$("#statementWallet").value="all";$("#statementSort").value="newest";$("#statementView").value="grouped";txFilter="all";$$(".chip").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));renderTransactions();};
+["statementSearch","statementMonth","statementCategory","statementStatus","statementSort","statementView"].forEach(id=>$("#"+id).addEventListener(id==="statementSearch"?"input":"change",renderTransactions));
+$("#clearStatementFilters").onclick=()=>{$("#statementSearch").value="";$("#statementMonth").value="";$("#statementCategory").value="all";$("#statementStatus").value="all";$("#statementSort").value="newest";$("#statementView").value="grouped";txFilter="all";$$(".chip").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));renderTransactions();};
 
 
-
-// V1.8 — carteira de benefícios
-$("#txWallet")?.addEventListener("change",e=>{if(e.target.value==="va")$("#txPayment").value="Vale Alimentação";else if(e.target.value==="vr")$("#txPayment").value="Vale Refeição";});
 
 // ============================================
 // V1.7 — PARCELAS, RECORRÊNCIAS, IMPORTAÇÃO, COTAÇÕES E BIOMETRIA
@@ -359,53 +348,23 @@ function updateScheduleFields(){
 $("#txScheduleType")?.addEventListener("change",updateScheduleFields);updateScheduleFields();
 
 let bankImportPreview=[];
-let bankImportMeta={};
-const importCategories=()=>categories.map(c=>`<option>${c}</option>`).join("");
-function importRowHtml(x,i){
-  const duplicate=x._duplicateLevel;
-  const dupText=duplicate==="exact"?"Duplicado praticamente idêntico ao extrato atual":duplicate==="possible"?`Possível duplicado${x._duplicateMatch?`: ${esc(x._duplicateMatch)}`:""}`:"";
-  return `<tr class="${duplicate?"epv17-duplicate":""}">
-    <td><input class="import-row-check" data-i="${i}" type="checkbox" ${duplicate?"":"checked"}></td>
-    <td><input class="imp-date" data-i="${i}" type="date" value="${esc(x.date)}"></td>
-    <td><input class="imp-desc" data-i="${i}" value="${esc(x.description)}">${dupText?`<span class="duplicate-warning ${duplicate}">${esc(dupText)}</span>`:""}</td>
-    <td><select class="imp-type" data-i="${i}"><option value="expense" ${x.type==="expense"?"selected":""}>Despesa</option><option value="income" ${x.type==="income"?"selected":""}>Receita</option></select></td>
-    <td><select class="imp-cat" data-i="${i}">${importCategories()}</select></td>
-    <td><select class="imp-wallet" data-i="${i}"><option value="cash">Conta / dinheiro</option><option value="va" ${x.wallet==="va"?"selected":""}>Vale Alimentação</option><option value="vr" ${x.wallet==="vr"?"selected":""}>Vale Refeição</option></select></td>
-    <td><input class="imp-value" data-i="${i}" type="number" min="0.01" step="0.01" value="${Number(x.value||x.amount||0).toFixed(2)}"></td>
-  </tr>`;
-}
-function syncImportPreviewFromUI(){
-  bankImportPreview.forEach((x,i)=>{
-    const get=cls=>document.querySelector(`${cls}[data-i="${i}"]`);
-    x._skip=!get('.import-row-check')?.checked;
-    x.date=get('.imp-date')?.value||x.date;x.description=get('.imp-desc')?.value.trim()||x.description;
-    x.type=get('.imp-type')?.value||x.type;x.category=get('.imp-cat')?.value||x.category;x.wallet=get('.imp-wallet')?.value||x.wallet;
-    const val=Number(get('.imp-value')?.value);if(Number.isFinite(val)&&val>0){x.value=val;x.amount=val;}
-  });
-}
 $("#bankImportFile")?.addEventListener("change",async e=>{
   const file=e.target.files?.[0];if(!file)return;
   try{
-    const ext=(file.name.split(".").pop()||"").toLowerCase();
-    const signature=await EPV18Import.fileSignature(file);
-    const already=(data.v18?.importHistory||[]).find(h=>h.fileSignature===signature);
-    let parsed=[];
-    if(ext==="pdf") parsed=await EPV18Import.parsePDF(file);
-    else {const text=await file.text();parsed=ext==="ofx"?EPV17Import.parseOFX(text):EPV17Import.parseCSV(text);}
-    bankImportPreview=EPV18Import.preview(data.transactions,parsed);
-    bankImportMeta={fileName:file.name,fileSignature:signature,fileType:ext,found:parsed.length};
-    const exact=bankImportPreview.filter(x=>x._duplicateLevel==="exact").length,possible=bankImportPreview.filter(x=>x._duplicateLevel==="possible").length;
-    $("#importPreviewSummary").classList.toggle("import-file-repeat",Boolean(already));
-    $("#importPreviewSummary").innerHTML=`<strong>${parsed.length} lançamento(s) encontrado(s) em ${esc(file.name)}</strong><span>${exact} duplicado(s) exato(s) • ${possible} possível(is) duplicidade(s).${already?" ⚠️ Este mesmo arquivo já foi importado anteriormente.":""}</span>`;
-    $("#importPreviewTable").innerHTML=bankImportPreview.length?`<table class="v18-import-table"><thead><tr><th>Adicionar</th><th>Data</th><th>Descrição</th><th>Tipo</th><th>Categoria</th><th>Carteira</th><th>Valor</th></tr></thead><tbody>${bankImportPreview.map(importRowHtml).join("")}</tbody></table>`:`<div class="empty">Nenhum lançamento foi reconhecido. Se o PDF for escaneado como imagem, exporte pelo internet banking em PDF com texto, OFX ou CSV.</div>`;
-    $$('.imp-cat').forEach(sel=>{const i=Number(sel.dataset.i);sel.value=bankImportPreview[i]?.category||"Outros";});
+    const text=await file.text();const ext=(file.name.split(".").pop()||"").toLowerCase();
+    const parsed=ext==="ofx"?EPV17Import.parseOFX(text):EPV17Import.parseCSV(text);
+    bankImportPreview=EPV17Import.preview(data.transactions,parsed);
+    const dup=bankImportPreview.filter(x=>x._duplicate).length;
+    $("#importPreviewSummary").innerHTML=`<strong>${parsed.length} lançamento(s) encontrado(s)</strong><span>${dup} possível(is) duplicidade(s) serão desmarcadas por padrão.</span>`;
+    $("#importPreviewTable").innerHTML=bankImportPreview.length?`<table><thead><tr><th>Importar</th><th>Data</th><th>Descrição</th><th>Tipo</th><th>Valor</th></tr></thead><tbody>${bankImportPreview.map((x,i)=>`<tr class="${x._duplicate?"epv17-duplicate":""}"><td><input class="import-row-check" data-i="${i}" type="checkbox" ${x._duplicate?"":"checked"}></td><td>${fmtDate(x.date)}</td><td>${esc(x.description)}</td><td>${x.type==="income"?"Receita":"Despesa"}</td><td>${money(x.value||x.amount)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Nenhum lançamento reconhecido neste arquivo.</div>`;
     safeOpen($("#importPreviewModal"));
-  }catch(err){console.error(err);alert("Não foi possível ler este extrato. PDFs com texto são suportados; PDFs escaneados como imagem podem precisar ser exportados novamente pelo banco.");}
+  }catch(err){console.error(err);alert("Não foi possível ler este arquivo OFX/CSV.");}
   e.target.value="";
 });
 $("#importPreviewForm")?.addEventListener("submit",e=>{
-  e.preventDefault();syncImportPreviewFromUI();
-  const result=EPV18Import.merge(data,bankImportPreview,bankImportMeta);data=result.data;safeClose($("#importPreviewModal"));save();alert(`${result.accepted.length} lançamento(s) adicionado(s) ao extrato.`);
+  e.preventDefault();
+  $$(".import-row-check").forEach(c=>{const i=Number(c.dataset.i);if(bankImportPreview[i])bankImportPreview[i]._skip=!c.checked;});
+  const result=EPV17Import.merge(data,bankImportPreview);data=result.data;safeClose($("#importPreviewModal"));save();alert(`${result.accepted.length} lançamento(s) importado(s).`);
 });
 
 $("#updateQuotes")?.addEventListener("click",async()=>{

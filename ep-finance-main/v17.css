@@ -1,0 +1,8 @@
+/* EP Finance V1.7 - estilos opcionais para componentes novos */
+.epv17-badge{display:inline-flex;align-items:center;gap:.35rem;padding:.25rem .55rem;border-radius:999px;font-size:.75rem;font-weight:700;background:rgba(127,127,127,.14)}
+.epv17-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.epv17-card{border:1px solid rgba(127,127,127,.18);border-radius:16px;padding:14px;background:var(--card-bg,rgba(255,255,255,.04))}
+.epv17-help{font-size:.8rem;opacity:.72;line-height:1.4}
+.epv17-preview{max-height:420px;overflow:auto;border:1px solid rgba(127,127,127,.18);border-radius:12px}
+.epv17-preview table{width:100%;border-collapse:collapse;font-size:.82rem}.epv17-preview th,.epv17-preview td{padding:8px;border-bottom:1px solid rgba(127,127,127,.12);text-align:left}
+.epv17-duplicate{opacity:.5;text-decoration:line-through}
