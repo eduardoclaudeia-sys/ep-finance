@@ -171,14 +171,20 @@
   }
   function dateAfter(iso,n){const [y,m,d]=String(iso).split('-').map(Number);const dt=new Date(y,m-1,d+n);return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;}
 
-  function iosSafari(){const ua=navigator.userAgent||'';return /iPad|iPhone|iPod/.test(ua) && /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);}
   function standalone(){return window.matchMedia?.('(display-mode: standalone)')?.matches || navigator.standalone===true;}
-  function maybeShowInstall(){
-    const banner=$id('pwaInstallBanner'); if(!banner)return;
-    const dismissed=localStorage.getItem('epFinancePwaInstallDismissed');
-    banner.hidden=!(iosSafari()&&!standalone()&&!dismissed);
+  function installHow(){
+    if(standalone()){
+      alert('O EP Finance já está aberto como aplicativo instalado neste aparelho.');
+      return;
+    }
+    alert('No iPhone: abra o EP Finance pelo Safari, toque no botão Compartilhar e escolha “Adicionar à Tela de Início”. Depois abra o EP Finance pelo novo ícone e ative as notificações em Ajustes.');
   }
-  function installHow(){alert('No iPhone: toque no botão Compartilhar do Safari e escolha “Adicionar à Tela de Início”. Depois abra o EP Finance pelo novo ícone e ative as notificações em Ajustes.');}
+  function refreshInstallStatus(){
+    const badge=$id('pwaInstallStatus');
+    if(!badge)return;
+    if(standalone()){badge.textContent='Instalado';badge.classList.add('on');}
+    else{badge.textContent='Opcional';badge.classList.remove('on');}
+  }
 
   function bind(){
     $id('alertCenterBtn')?.addEventListener('click',openCenter);
@@ -187,12 +193,11 @@
     $id('markAlertsRead')?.addEventListener('click',markAllRead);
     $id('saveAlertChannels')?.addEventListener('click',saveChannels);
     $id('exportCalendar')?.addEventListener('click',exportCalendar);
-    $id('dismissPwaInstall')?.addEventListener('click',()=>{localStorage.setItem('epFinancePwaInstallDismissed','1');maybeShowInstall();});
-    $id('pwaInstallHow')?.addEventListener('click',installHow);
-    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')renderAlertCenter();});
-    window.addEventListener('epfinance-authenticated',()=>{setTimeout(()=>{initInputs();renderAlertCenter();maybeShowInstall();},500);});
+    $id('pwaInstallSettings')?.addEventListener('click',installHow);
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){renderAlertCenter();refreshInstallStatus();}});
+    window.addEventListener('epfinance-authenticated',()=>{setTimeout(()=>{initInputs();renderAlertCenter();refreshInstallStatus();},500);});
   }
 
-  initInputs(); bind(); renderAlertCenter(); setTimeout(maybeShowInstall,1200);
+  initInputs(); bind(); renderAlertCenter(); refreshInstallStatus();
   window.EPV19Alerts={buildAlerts,render:renderAlertCenter,exportCalendar};
 })();

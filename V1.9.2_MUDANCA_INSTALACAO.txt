@@ -1,0 +1,8 @@
+EP Finance V1.9.2
+
+- Removido completamente o banner automático de instalação do PWA da tela inicial.
+- A instrução de instalação foi movida para Ajustes > Instalar EP Finance no celular.
+- O botão “Ver como instalar” mostra o passo a passo manual no iPhone.
+- Se o app estiver em modo standalone, o status mostra “Instalado”.
+- Nenhum dado financeiro, usuário, tabela ou configuração do Supabase foi removido.
+- Cache do PWA atualizado para v1.9.2.

@@ -10,10 +10,10 @@
   <title>EP Finance</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=1.9.0" />
-  <link rel="stylesheet" href="v17.css?v=1.9.0" />
-  <link rel="stylesheet" href="v18.css?v=1.9.0" />
-  <link rel="stylesheet" href="v19.css?v=1.9.0" />
+  <link rel="stylesheet" href="styles.css?v=1.9.2" />
+  <link rel="stylesheet" href="v17.css?v=1.9.2" />
+  <link rel="stylesheet" href="v18.css?v=1.9.2" />
+  <link rel="stylesheet" href="v19.css?v=1.9.2" />
 </head>
 <body>
   <div id="authGate" class="auth-gate">
@@ -197,6 +197,18 @@
         </div>
         <div class="settings-card"><h3>Backup</h3><p>Exporte seus dados antes de trocar de aparelho ou limpar o navegador.</p><div class="stack"><button id="exportData" class="secondary" type="button">Exportar backup</button><label class="secondary file-label">Importar backup<input id="importData" type="file" accept="application/json" hidden></label></div></div>
 
+        <div class="settings-card pwa-settings-card">
+          <div class="settings-title-row">
+            <div>
+              <h3>Instalar EP Finance no celular</h3>
+              <p>Adicione o EP Finance à Tela de Início para usar como aplicativo e receber notificações Push compatíveis.</p>
+            </div>
+            <span id="pwaInstallStatus" class="status-badge">Opcional</span>
+          </div>
+          <button id="pwaInstallSettings" class="secondary" type="button">Ver como instalar</button>
+          <small class="settings-help">No iPhone: abra pelo Safari, toque em Compartilhar e escolha “Adicionar à Tela de Início”. Este aviso não aparecerá mais automaticamente na tela inicial.</small>
+        </div>
+
         <div class="settings-card notification-card">
           <div class="settings-title-row">
             <div>
@@ -345,24 +357,19 @@
     </aside>
   </div>
 
-  <div id="pwaInstallBanner" class="pwa-install-banner" hidden>
-    <div><strong>Receba alertas mesmo com o EP Finance fechado</strong><span>No iPhone: Compartilhar → Adicionar à Tela de Início.</span></div>
-    <div class="pwa-install-actions"><button id="pwaInstallHow" class="secondary compact" type="button">Como instalar</button><button id="dismissPwaInstall" class="icon-btn" type="button" aria-label="Fechar">✕</button></div>
-  </div>
-
   <div id="biometricLock" class="v17-lock" hidden>
     <div class="v17-lock-card"><div class="auth-logo">EP</div><h2>EP Finance bloqueado</h2><p>Use a segurança do seu aparelho para continuar.</p><button id="unlockBiometric" class="primary" type="button">Desbloquear</button><small id="biometricLockMessage"></small></div>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=1.9.0"></script>
-  <script src="v17-data.js?v=1.9.0"></script>
-  <script src="v17-import.js?v=1.9.0"></script>
-  <script src="v17-quotes.js?v=1.9.0"></script>
-  <script src="v17-security.js?v=1.9.0"></script>
+  <script src="config.js?v=1.9.2"></script>
+  <script src="v17-data.js?v=1.9.2"></script>
+  <script src="v17-import.js?v=1.9.2"></script>
+  <script src="v17-quotes.js?v=1.9.2"></script>
+  <script src="v17-security.js?v=1.9.2"></script>
   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
-  <script src="v18-import.js?v=1.9.0"></script>
-  <script src="app.js?v=1.9.0"></script>
-  <script src="auth.js?v=1.9.0"></script>
-  <script src="v19-alerts.js?v=1.9.0"></script>
+  <script src="v18-import.js?v=1.9.2"></script>
+  <script src="app.js?v=1.9.2"></script>
+  <script src="auth.js?v=1.9.2"></script>
+  <script src="v19-alerts.js?v=1.9.2"></script>
 </body>
 </html>

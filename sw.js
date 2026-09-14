@@ -1,17 +1,17 @@
-const CACHE_NAME = "ep-finance-v1.9.0";
+const CACHE_NAME = "ep-finance-v1.9.2";
 const STATIC_FILES = [
   "./",
   "./index.html",
-  "./styles.css?v=1.9.0",
-  "./v17.css?v=1.9.0",
-  "./v17-data.js?v=1.9.0",
-  "./v17-import.js?v=1.9.0",
-  "./v17-quotes.js?v=1.9.0",
-  "./v17-security.js?v=1.9.0",
-  "./v18-import.js?v=1.9.0",
-  "./v18.css?v=1.9.0",
-  "./v19-alerts.js?v=1.9.0",
-  "./v19.css?v=1.9.0",
+  "./styles.css?v=1.9.2",
+  "./v17.css?v=1.9.2",
+  "./v17-data.js?v=1.9.2",
+  "./v17-import.js?v=1.9.2",
+  "./v17-quotes.js?v=1.9.2",
+  "./v17-security.js?v=1.9.2",
+  "./v18-import.js?v=1.9.2",
+  "./v18.css?v=1.9.2",
+  "./v19-alerts.js?v=1.9.2",
+  "./v19.css?v=1.9.2",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png"
